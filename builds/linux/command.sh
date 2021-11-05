@@ -1,0 +1,11 @@
+export PATH=/usr/local/cuda/bin:$PATH
+export NVGRAPH_HOME=~/vga_gpu_comm/nvgraph
+export PATH=/usr/local/cuda/bin:$PATH
+export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:~/usr/include
+export C_INCLUDE_PATH=$C_INCLUDE_PATH:~/usr/include
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/usr/lib
+export PATH=$PATH:~/usr/bin
+export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:~/usr/include
+export C_INCLUDE_PATH=$C_INCLUDE_PATH:~/usr/include
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/usr/lib
+export PATH=$PATH:~/usr/bin
