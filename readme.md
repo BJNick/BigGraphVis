@@ -6,6 +6,7 @@ GraphVis test implementation uses Brinkmann implementation (cited below).
 #### System Requirements
 
 A CUDA capable GPU. Currently only Linux is supported.
+The windows Desktop application under developing and it will be published here.
 
 #### Obtaining all code
 This repository contains a submodule (`lib/pngwriter`). Be sure to run
