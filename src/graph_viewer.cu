@@ -242,6 +242,12 @@ int main(int argc, const char** argv)
 
 	// Read the input file and count the number of nodes and edges
 	ifstream inFile;
+
+	if (!is_file_exists(argv[8])) {
+		cout << "error: File not found: " << argv[8] << "\n";
+		exit(EXIT_FAILURE);
+	}
+
 	inFile.open(argv[8]);
 
 	std::string src_id_s, dst_id_s;
