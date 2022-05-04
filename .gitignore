@@ -29,6 +29,7 @@ xcuserdata/
 *.xccheckout
 *.xcscmblueprint
 .ipynb_checkpoints/
+.ipynb_checkpoints/*
 .vs/
 .github/workflows/
 

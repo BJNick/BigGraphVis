@@ -221,7 +221,7 @@ int main(int argc, const char** argv)
 	// Allocate variables
 	curandState_t* states; // CUDA random number generation states
 	uint32_t *communities, *src, *dst, degree_threshold, degree_thresholdS, num_of_edges, num_of_nodes;
-	uint32_t *degree, *degree_cmt, *degree_S, degree_name;
+	uint32_t *degree, *degree_cmt, *degree_S;
 	int huenumber, src_id, dst_id, rounds, *sketch, *h1, *h2, *h3, *h4, *Degree_done, *weight_S;
 
 	// Input the heuristic number
@@ -233,7 +233,6 @@ int main(int argc, const char** argv)
 	std::string s = argv[13];
 	degree_threshold = std::stoul(s.c_str());
 	degree_thresholdS = degree_threshold;
-	degree_name = degree_threshold;
 	
 	// Input the number of rounds used by  the SCoDA algorithm (Hollocou et al.)
 	s = argv[14];
@@ -506,7 +505,7 @@ int main(int argc, const char** argv)
 // Running the CPU version of SCoDA is not supported
 /*#ifdef __NVCC__
 	if(cuda_requested)
-		fa2 = new RPGraph::CUDAForceAtlas2(layout, approximate,
+		fa2 = new RPGraph::CUDAForceAtlas2(layout, approximate, 
 			strong_gravity, gravity, scale);
 	else
 #endif
@@ -537,7 +536,7 @@ int main(int argc, const char** argv)
 			std::string edgelist_basename = basename(edgelist_path);
 			time_t now = time(0);
 			/*std::string out_filename = edgelist_basename + to_string(rounds) + "_" 
-				+ to_string(degree_name) + "_" + std::to_string(iteration) + "_" 
+				+ to_string(degree_threshold) + "_" + std::to_string(iteration) + "_" 
 				+ std::to_string(huenumber) + "_" + std::to_string(now) + "." + out_format;*/
 
 			// Use a simplified output name in lexico-graphical order
