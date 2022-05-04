@@ -53,7 +53,7 @@
 #define PNGWRITER_VERSION PNGWRITER_EVALUATE(PNGWRITER_VERSION_MAJOR, PNGWRITER_VERSION_MINOR, PNGWRITER_VERSION_PATCH)
 
 /* includes */
-#include </student/ehm486/usr/include/libpng16/png.h>
+#include </student/mdy678/usr/include/libpng16/png.h>
 #if (PNG_LIBPNG_VER >= 10500)
 #include <zlib.h>
 #endif

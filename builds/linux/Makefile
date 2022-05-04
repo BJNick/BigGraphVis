@@ -30,7 +30,7 @@ CFLAGS   :=$(O_LVL)
 CXXFLAGS :=$(CXXFLAGS) $(O_LVL) -std=c++11
 
 # Linker flags
-LDFLAGS  :=-lc -lm -lstdc++ -L/student/mdy678/usr/lib -L/student/mdy678/usr/bin -lpng -DNO_FREETYPE
+LDFLAGS  :=-lc -lm -lstdc++ -L"/student/mdy678/usr/lib" -L"/student/mdy678/usr/bin" -lpng -DNO_FREETYPE
 
 # src./obj. files
 GRAPH_VIEWER_SRCS := $(wildcard $(SRC_DIR)/*.cpp)
