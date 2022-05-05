@@ -495,6 +495,17 @@ namespace RPGraph
             }
 
             int radian = (sqrt(graph.degree(i) + 1)) * 0.6; // sqrt(graph.degree(i));
+            
+            // TODO: Make only for trees
+            // Make the root(s) of a tree appear bigger
+            // The first node is the root and nodes with the same degree are also roots
+
+            //std::cout << graph.degree(i) << "\n";
+            if (i == 0 || graph.degree(i) == graph.degree(0))
+            {
+                int adj_degree = sorteddegree[0];
+                radian = ((sqrt(adj_degree + 1)) * 0.6) * 2;
+            }
 
             int threash = 100;
             if (r == double(177) / double(255))
