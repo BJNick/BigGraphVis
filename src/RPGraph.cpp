@@ -64,7 +64,7 @@ namespace RPGraph
 
         edgelist_file.close();*/
         //========================
-        for(int i=1;i<=n;i++)
+        for(int i=0;i<n;i++)
         {
             if(s[i]<=m&&t[i]<=m)
                 if(communities[s[i]]>0&&communities[s[i]]<m&&communities[t[i]]>0&&communities[t[i]]<m)

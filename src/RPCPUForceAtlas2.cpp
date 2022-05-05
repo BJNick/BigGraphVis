@@ -82,6 +82,41 @@ namespace RPGraph
         forces[n] += f;
     }
 
+    //====== New magnetic force code ======
+
+    void CPUForceAtlas2::apply_magnetic(nid_t n)
+    {
+        Real2DVector f = Real2DVector(0.0, 0.0);
+        for (nid_t t : layout.graph.neighbors_with_geq_id(n))
+        {
+            // Here we define the magnitude of the attractive force `f_a'
+            // *divided* by the length distance between `n' and `t', i.e. `f_a_over_d'
+            Real2DVector pos_n = layout.getCoordinate(n).toVector();
+            Real2DVector pos_t = layout.getCoordinate(t).toVector();
+            Real2DVector disp = layout.getDistanceVector(n, t);
+            float dist = std::sqrt(disp.magnitude());
+
+            Real2DVector field_direction = Real2DVector(1, 0);
+            float field_strength = 16; // TODO: Input parameter
+            // TODO: Add c, alpha and beta parameters
+            float alpha = 1;
+            float beta = 1;
+            Real2DVector force_on_n = disp.rotate90clockwise() * -(powf(dist, alpha-1) * field_strength * powf(field_direction.angleCos(disp), beta) * 
+                sign(field_direction.cross(disp)));
+            
+            Real2DVector force_on_t = force_on_n*-1;
+
+            Real2DVector accel_on_n = force_on_n / mass(n);
+            Real2DVector accel_on_t = force_on_t / mass(t);
+
+            f += accel_on_n;
+            forces[t] += accel_on_t;
+        }
+        forces[n] += f;
+    }
+
+    //====================================
+
     void CPUForceAtlas2::apply_repulsion(nid_t n)
     {
         if (use_barneshut)
@@ -232,6 +267,8 @@ namespace RPGraph
             apply_gravity(n);
             apply_attract(n);
             apply_repulsion(n);
+            // TODO: Implement a toggle for this
+            apply_magnetic(n);
         }
 
         updateSpeeds();

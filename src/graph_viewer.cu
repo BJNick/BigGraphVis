@@ -270,6 +270,9 @@ int main(int argc, const char** argv)
 		}
 	}
 
+	// TODO: Better solution for iterating nodes
+	num_of_nodes += 1; // Count the last node id as well
+
 	cout << "Number of nodes: " << num_of_nodes << '\n';
 	cout << "Number of edges: " << num_of_edges << '\n';
 	inFile.close();
@@ -366,7 +369,8 @@ int main(int argc, const char** argv)
 	if (rounds == 0)
 		rounds = num_of_edges * 0.01;
 	
-	for (int i = 0; i < rounds; i++)
+	// NO COMMUNITY DETECTION FOR NOW
+	/*for (int i = 0; i < rounds; i++)
 	{
 		cout << "Community Detection Round " << i + 1 << "\n";
 
@@ -505,7 +509,8 @@ int main(int argc, const char** argv)
 	RPGraph::ForceAtlas2* fa2;
 	
 	// Load the CUDA version of the algorithm
-	fa2 = new RPGraph::CUDAForceAtlas2(layout, approximate,
+	// CHANGED TO CPU FOR MAGNETS
+	fa2 = new RPGraph::CPUForceAtlas2(layout, approximate,
 		strong_gravity, gravity, scale);
 
 // Running the CPU version of SCoDA is not supported
@@ -546,7 +551,7 @@ int main(int argc, const char** argv)
 				+ std::to_string(huenumber) + "_" + std::to_string(now) + "." + out_format;*/
 
 			// Use a simplified output name in lexico-graphical order
-			std::string out_filename = edgelist_basename + "_" + std::to_string(now) + "_" + fill_zeros(iteration, 4) + "." + out_format;	
+			std::string out_filename = edgelist_basename + "_M_" + std::to_string(now) + "_" + fill_zeros(iteration, 4) + "." + out_format;	
 			std::string out_filepath = out_path + "/" + out_filename;
 
 			printf("Starting iteration %d (%.2f%%), writing %s...", iteration, 100 * (float)iteration / max_iterations, out_format.c_str());

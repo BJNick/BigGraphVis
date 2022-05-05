@@ -64,6 +64,11 @@ namespace RPGraph
 
         Real2DVector getNormalized();
         Real2DVector normalize();
+        Real2DVector rotate90clockwise();
+        float dot(Real2DVector b);
+        float cross(Real2DVector b);
+        float angleCos(Real2DVector b);
+        float angleSin(Real2DVector b);
     };
 
     class Coordinate
@@ -86,6 +91,7 @@ namespace RPGraph
         int quadrant(); // Of `this' wrt. (0,0).
         float distance(Coordinate to);
         float distance2(Coordinate to);
+        Real2DVector toVector();
 
     };
 
@@ -95,6 +101,7 @@ namespace RPGraph
     Real2DVector normalizedDirection(Coordinate from, Coordinate to);
     Real2DVector direction(Coordinate from, Coordinate to);
 
+    int sign(float x);
 }
 
 #endif /* RPCommonUtils_hpp */

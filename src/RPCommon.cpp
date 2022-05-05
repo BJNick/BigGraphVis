@@ -110,6 +110,45 @@ namespace RPGraph
         return *this;
     }
 
+    //======== Additional methods for magnetic force calculation ==========
+
+    Real2DVector Real2DVector::rotate90clockwise()
+    {
+        return Real2DVector(this->y, -this->x);
+    }
+
+    float Real2DVector::dot(Real2DVector b)
+    {
+        return this->x * b.x + this->y * b.y;
+    }
+
+    float Real2DVector::cross(Real2DVector b)
+    {
+        return this->x * b.y - this->y * b.x;
+    }
+
+    float Real2DVector::angleCos(Real2DVector b)
+    {
+        return std::acos(this->dot(b) / (this->magnitude() * b.magnitude()));
+    }
+
+    float Real2DVector::angleSin(Real2DVector b)
+    {
+        return std::asin(this->cross(b) / (this->magnitude() * b.magnitude()));
+    }
+
+    int sign(float x)
+    {
+        return (x > 0) - (x < 0);
+    }
+
+    Real2DVector Coordinate::toVector()
+    {
+        return Real2DVector(this->x, this->y);
+    }
+
+    //=======================================================================
+
     /* Definitions for Coordinate */
     Coordinate::Coordinate(float x, float y) : x(x), y(y) {};
 
