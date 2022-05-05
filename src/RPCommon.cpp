@@ -129,12 +129,20 @@ namespace RPGraph
 
     float Real2DVector::angleCos(Real2DVector b)
     {
-        return std::acos(this->dot(b) / (this->magnitude() * b.magnitude()));
+        if (this->magnitude() == 0 || b.magnitude() == 0)
+            return 0;
+        float dot_product = this->dot(b) / (this->magnitude() * b.magnitude());
+        float clamped_dot_product = std::min(std::max(dot_product, -1.0f), 1.0f);
+        return std::acos(clamped_dot_product);
     }
 
     float Real2DVector::angleSin(Real2DVector b)
     {
-        return std::asin(this->cross(b) / (this->magnitude() * b.magnitude()));
+        if (this->magnitude() == 0 || b.magnitude() == 0)
+            return 0;
+        float cross_product = this->cross(b) / (this->magnitude() * b.magnitude());
+        float clamped_cross_product = std::min(std::max(cross_product, -1.0f), 1.0f);
+        return std::asin(clamped_cross_product);
     }
 
     int sign(float x)
@@ -145,6 +153,14 @@ namespace RPGraph
     Real2DVector Coordinate::toVector()
     {
         return Real2DVector(this->x, this->y);
+    }
+
+    Real2DVector Real2DVector::getNormalizedFinite()
+    {
+        // A helper method that prevents division by zero
+        if (magnitude() == 0)
+            return Real2DVector(0, 0);
+        return getNormalized();
     }
 
     //=======================================================================

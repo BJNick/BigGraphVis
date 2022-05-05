@@ -28,6 +28,9 @@
 #include <cmath>
 #include <chrono>
 
+#include <stdexcept>
+#include <iostream>
+
 namespace RPGraph
 {
     // CPUForceAtlas2 definitions.
@@ -96,23 +99,66 @@ namespace RPGraph
             Real2DVector disp = layout.getDistanceVector(n, t);
             float dist = std::sqrt(disp.magnitude());
 
-            Real2DVector field_direction = Real2DVector(1, 0);
-            float field_strength = 16; // TODO: Input parameter
-            // TODO: Add c, alpha and beta parameters
+            Real2DVector field_direction = get_magnetic_field(center_of_mass(n, t));
+
+            if (dist == 0.0 || field_direction.magnitude() == 0.0)
+                continue; // Cannot compute the angle when either is zero
+
+            // TODO: Add b, c, alpha and beta as input parameters
+            float field_strength = 16;
+            float c_m = 1;
             float alpha = 1;
             float beta = 1;
-            Real2DVector force_on_n = disp.rotate90clockwise() * -(powf(dist, alpha-1) * field_strength * powf(field_direction.angleCos(disp), beta) * 
-                sign(field_direction.cross(disp)));
+
+            Real2DVector force_on_n = disp.rotate90clockwise() * -(c_m * powf(dist, alpha-1) * field_strength 
+                * powf(field_direction.angleCos(disp), beta) 
+                * sign(field_direction.cross(disp)));
             
-            Real2DVector force_on_t = force_on_n*-1;
+            Real2DVector force_on_t = force_on_n * -1;
 
             Real2DVector accel_on_n = force_on_n / mass(n);
             Real2DVector accel_on_t = force_on_t / mass(t);
 
             f += accel_on_n;
             forces[t] += accel_on_t;
+
+            // Error case, something went wrong with the above computation
+            if (!std::isfinite(accel_on_n.magnitude()) || !std::isfinite(accel_on_t.magnitude())) {
+                std::cout << "Magnetic acceleration is not finite: " << accel_on_n.magnitude() << "\n";
+                exit(EXIT_FAILURE);
+            }
         }
         forces[n] += f;
+    }
+
+    Real2DVector CPUForceAtlas2::center_of_mass(nid_t n, nid_t t)
+    {
+        Real2DVector pos_n = layout.getCoordinate(n).toVector();
+        Real2DVector pos_t = layout.getCoordinate(t).toVector();
+        float mass_n = mass(n) == 0 ? 1 : mass(n);
+        float mass_t = mass(t) == 0 ? 1 : mass(t);
+        float one_over_total_mass = 1 / (mass_n + mass_t);
+        Real2DVector center_of_mass = (pos_n*mass_n + pos_t*mass_t) * one_over_total_mass;
+        return center_of_mass;
+    }
+    
+    Real2DVector CPUForceAtlas2::get_magnetic_field(Real2DVector pos) 
+    {
+        std::string field_type = "polar"; // TODO: Make it an input parameter
+
+        if (field_type == "none") {
+            return Real2DVector(0, 0);
+        } else if (field_type == "parallel") {
+            return Real2DVector(1, 0);
+        } else if (field_type == "polar") {
+            return pos.getNormalizedFinite();
+        } else if (field_type == "polar-reversed") {
+            return pos.getNormalizedFinite() * (-1);
+        } else if (field_type == "concentric") {
+            return pos.getNormalizedFinite().rotate90clockwise();
+        } else {
+            throw std::invalid_argument("Invalid magnetic field type: " + field_type);
+        }
     }
 
     //====================================

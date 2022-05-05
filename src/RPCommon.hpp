@@ -65,6 +65,7 @@ namespace RPGraph
         Real2DVector getNormalized();
         Real2DVector normalize();
         Real2DVector rotate90clockwise();
+        Real2DVector getNormalizedFinite();
         float dot(Real2DVector b);
         float cross(Real2DVector b);
         float angleCos(Real2DVector b);

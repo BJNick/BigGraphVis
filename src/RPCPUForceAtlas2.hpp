@@ -50,7 +50,11 @@ namespace RPGraph
         void apply_repulsion(nid_t n);
         void apply_gravity(nid_t n);
         void apply_attract(nid_t n);
+        // New added force
         void apply_magnetic(nid_t n);
+        Real2DVector get_magnetic_field(Real2DVector pos);
+        Real2DVector center_of_mass(nid_t n, nid_t t);
+
         void updateSpeeds();
         void apply_displacement(nid_t n);
     };
