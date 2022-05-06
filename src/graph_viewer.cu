@@ -202,10 +202,6 @@ int main(int argc, const char** argv)
 {
 	cout << "BigGraphVis algorithm started" << "\n";
 
-	// Use a consistent random seed for reproducibility 
-	// (note: this may have no effect on CUDA's random generation)
-	srandom(1234);
-
 	// Check command-line usage
 	if (argc < 15)
 	{
@@ -217,38 +213,55 @@ int main(int argc, const char** argv)
 	auto start = high_resolution_clock::now();
 	auto end = high_resolution_clock::now();
 	auto end_cmt = high_resolution_clock::now();
+
+	// --- Parse all the arguments ---
+
+	// ForceAtlas2 parameters
+	const bool cuda_requested = std::string(argv[1]) == "gpu" or std::string(argv[1]) == "cuda";
+	const int max_iterations = std::stoi(argv[2]);
+	const int num_screenshots = std::stoi(argv[3]);
+	const bool strong_gravity = std::string(argv[4]) == "sg";
+	const float scale = std::stof(argv[5]);
+	const float gravity = std::stof(argv[6]);
+	const bool approximate = std::string(argv[7]) == "approximate";
+
+	// Filepaths for I/O
+	std::string in_path = argv[8];
+	std::string out_path = argv[9];
+
+	// Output format and parameters
+	std::string out_format = argv[10];
+	int image_w = std::stoi(argv[11]);
+	int image_h = std::stoi(argv[12]);
+
+	// SCoDA Community Detection parameters
+	uint32_t degree_threshold = std::stoul(argv[13]);
+	uint32_t degree_thresholdS = degree_threshold;
+	int rounds = std::atoi(argv[14]); // Number of  SCoDA rounds
+	int huenumber = std::stoul(argv[15]); // Heuristic number
+
+	
+	cout << "Initialization" << "\n";
+
+	// Use a consistent random seed for reproducibility 
+	// (note: this may have no effect on CUDA's random generation)
+	srandom(1234);
 	
 	// Allocate variables
 	curandState_t* states; // CUDA random number generation states
-	uint32_t *communities, *src, *dst, degree_threshold, degree_thresholdS, num_of_edges, num_of_nodes;
+	uint32_t *communities, *src, *dst, num_of_edges, num_of_nodes;
 	uint32_t *degree, *degree_cmt, *degree_S;
-	int huenumber, src_id, dst_id, rounds, *sketch, *h1, *h2, *h3, *h4, *Degree_done, *weight_S;
-
-	// Input the heuristic number
-	// SUGGESTION: Parse all arguments at once, in order, at the beginning of the program
-	std::string sss = argv[15];  
-	huenumber = std::stoul(sss.c_str());
-
-	// Input the degree threshold used by the SCoDA algorithm (Hollocou et al.)
-	std::string s = argv[13];
-	degree_threshold = std::stoul(s.c_str());
-	degree_thresholdS = degree_threshold;
-	
-	// Input the number of rounds used by  the SCoDA algorithm (Hollocou et al.)
-	s = argv[14];
-	rounds = std::atoi(s.c_str());
-	
-	cout << "Initialization" << "\n";
+	int src_id, dst_id, *sketch, *h1, *h2, *h3, *h4, *Degree_done, *weight_S;
 
 	// Read the input file and count the number of nodes and edges
 	ifstream inFile;
 
-	if (!is_file_exists(argv[8])) {
-		cout << "error: File not found: " << argv[8] << "\n";
+	if (!is_file_exists(in_path)) {
+		cout << "error: File not found: " << in_path << "\n";
 		exit(EXIT_FAILURE);
 	}
 
-	inFile.open(argv[8]);
+	inFile.open(in_path);
 
 	std::string src_id_s, dst_id_s;
 	num_of_nodes = 0;
@@ -331,7 +344,7 @@ int main(int argc, const char** argv)
 	// Read the input file again, now storing the edge connections
 	// in the CUDA allocated variables
 
-	inFile.open(argv[8]);
+	inFile.open(in_path);
 	for (int i = 0; inFile >> src_id_s >> dst_id_s != NULL; i++)
 	{
 		if (isdigit(src_id_s[0]))
@@ -432,25 +445,6 @@ int main(int argc, const char** argv)
 
 	cout << "--- Force Atlas 2 ---" << "\n";
 
-	// Parse ForceAtlas2 input arguments
-	const bool cuda_requested = std::string(argv[1]) == "gpu" or std::string(argv[1]) == "cuda";
-	const int max_iterations = std::stoi(argv[2]);
-	const int num_screenshots = std::stoi(argv[3]);
-	const bool strong_gravity = std::string(argv[4]) == "sg";
-	const float scale = std::stof(argv[5]);
-	const float gravity = std::stof(argv[6]);
-	const bool approximate = std::string(argv[7]) == "approximate";
-
-	// Parse filepaths for I/O
-	std::string edgelist_path = argv[8];
-	std::string out_path = argv[9];
-
-	// Parse output format and parameters
-	int image_w, image_h;
-	std::string out_format = argv[10];
-	image_w = std::stoi(argv[11]);
-	image_h = std::stoi(argv[12]);
-
 	if (cuda_requested and not approximate)
 	{
 		fprintf(stderr, "error: The CUDA implementation (currently) requires Barnes-Hut approximation.\n");
@@ -458,9 +452,9 @@ int main(int argc, const char** argv)
 	}
 
 	// Check in_path and out_path
-	if (!is_file_exists(edgelist_path))
+	if (!is_file_exists(in_path))
 	{
-		fprintf(stderr, "error: No edgelist at %s\n", edgelist_path.c_str());
+		fprintf(stderr, "error: No edgelist at %s\n", in_path.c_str());
 		exit(EXIT_FAILURE);
 	}
 
@@ -539,7 +533,7 @@ int main(int argc, const char** argv)
 		if (num_screenshots > 0 && (iteration % snap_period == 0 || iteration == max_iterations))
 		{
 			// Determine output filename
-			std::string edgelist_basename = basename(edgelist_path);
+			std::string edgelist_basename = basename(in_path);
 			time_t now = time(0);
 			/*std::string out_filename = edgelist_basename + to_string(rounds) + "_" 
 				+ to_string(degree_threshold) + "_" + std::to_string(iteration) + "_" 
