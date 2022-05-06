@@ -110,9 +110,7 @@ namespace RPGraph
             float alpha = 1;
             float beta = 1;
 
-            Real2DVector force_on_n = disp.rotate90clockwise() * -(c_m * powf(dist, alpha-1) * field_strength 
-                * powf(field_direction.angleCos(disp), beta) 
-                * sign(field_direction.cross(disp)));
+            Real2DVector force_on_n = magnetic_equation(field_direction, disp, field_strength, c_m, alpha, beta);
             
             Real2DVector force_on_t = force_on_n * -1;
 
@@ -140,6 +138,19 @@ namespace RPGraph
         float one_over_total_mass = 1 / (mass_n + mass_t);
         Real2DVector center_of_mass = (pos_n*mass_n + pos_t*mass_t) * one_over_total_mass;
         return center_of_mass;
+    }
+
+    Real2DVector CPUForceAtlas2::magnetic_equation(Real2DVector m, Real2DVector d, float b, float c, float alpha, float beta) 
+    {
+        bool bi_directional = false; // TODO: Add as input parameter
+
+        float dist = std::sqrt(d.magnitude());
+        Real2DVector force_on_n = Real2DVector(0.0, 0.0);
+        if (!bi_directional)
+            force_on_n = d.rotate90clockwise() * -(b * c * powf(dist, alpha-1) * powf(m.angleCos(d), beta) * sign(m.cross(d)));
+        else
+            force_on_n = d.rotate90clockwise() * -(b * c * powf(dist, alpha-1) * powf(std::abs(m.angleSin(d)), beta) * sign(m.cross(d) * m.dot(d)));
+        return force_on_n;
     }
     
     Real2DVector CPUForceAtlas2::get_magnetic_field(Real2DVector pos) 
