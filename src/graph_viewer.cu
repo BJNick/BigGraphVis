@@ -192,6 +192,15 @@ void find_degree_S(int num_of_edges, int num_of_nodes, uint32_t* communities, ui
 
 //============================================================
 
+const int num_of_parameters = 17;
+
+std::string parameter_keys[num_of_parameters] = {
+	"program_call", "cuda_requested", "max_iterations", "num_screenshots", "strong_gravity", "scale", "gravity", "approximate",
+	"in_path", "out_path", "out_format", "image_w", "image_h", "degree_threshold", "rounds", "huenumber",
+	// Extra parameters:
+	"community_detection"
+}; 
+
 // A helpful method for naming the output files
 std::string fill_zeros(int number, int digits)
 {
@@ -203,10 +212,6 @@ std::string fill_zeros(int number, int digits)
 // Store command line arguments to a map
 void store_argv(int argc, const char** argv, map<string, string>& map)
 {
-	const char* const parameter_keys[16] = {
-		"program_call", "cuda_requested", "max_iterations", "num_screenshots", "strong_gravity", "scale", "gravity", "approximate",
-		"in_path", "out_path", "out_format", "image_w", "image_h", "degree_threshold", "rounds", "huenumber"
-	}; 
 	if (argc == 16) {
 		for (int i = 0; i < argc; i++)
 		{
@@ -220,14 +225,39 @@ void store_argv(int argc, const char** argv, map<string, string>& map)
 // Read the input file and store the fields to a map
 void read_args_from_file(string file_path, map<string, string>& map)
 {
+	if (!is_file_exists(file_path))
+	{
+		cout << "File does not exist " << file_path << "\n";
+		exit(EXIT_FAILURE);
+	}
 	std::ifstream file(file_path);
 	string line;
 	while (std::getline(file, line))
 	{
+		// Skip lines that start with #, they are comments
+		if (line[0] == '#')
+			continue;
 		std::istringstream ss(line);
 		string key, value;
 		if (std::getline(ss, key, '='))
 		{
+			// If the key is whitespace, skip the line
+			key.erase(remove_if(key.begin(), key.end(), ::isspace), key.end());
+			if (key.empty())
+				continue;
+			// Make sure the key is in the list of keys
+			bool found = (std::find(parameter_keys, parameter_keys + num_of_parameters, key) != parameter_keys + num_of_parameters);
+			if (!found)
+			{
+				cout << "Config key \"" << key << "\" is not a valid key\n";
+				cout << "Valid keys are: ";
+				for (int i = 0; i < num_of_parameters; i++)
+				{
+					cout << parameter_keys[i] << ", ";
+				}
+				cout << "\n";
+				exit(EXIT_FAILURE);
+			}
 			if (std::getline(ss, value))
 			{
 				// Erase unnecessary spaces
@@ -259,6 +289,8 @@ void set_default_args(map<string, string>& map)
 	map["degree_threshold"] = "11";
 	map["rounds"] = "5";
 	map["huenumber"] = "6500";
+	// Extra parameters
+	map["community_detection"] = "SCoDA";
 }
 
 //============================================================
@@ -439,72 +471,76 @@ int main(int argc, const char** argv)
 	* community detection, by Hollocou et al.
 	*/
 
-	cout << "--- SCoDA Community Detection ---" << "\n";
-	
-	// Recompute the number of CUDA blocks based on total EDGES
-	remain = num_of_edges % blockSize;
-	numBlocks = num_of_edges / blockSize + (remain > 0 ? 1 : 0);
+	if (arg_map["community_detection"] == "SCoDA") {
 
-	if (rounds == 0)
-		rounds = num_of_edges * 0.01;
-	
-	for (int i = 0; i < rounds; i++)
-	{
-		cout << "Community Detection Round " << i + 1 << "\n";
+		cout << "--- SCoDA Community Detection ---" << "\n";
+		
+		// Recompute the number of CUDA blocks based on total EDGES
+		remain = num_of_edges % blockSize;
+		numBlocks = num_of_edges / blockSize + (remain > 0 ? 1 : 0);
 
-		degree_threshold = degree_threshold * degree_threshold;
+		if (rounds == 0)
+			rounds = num_of_edges * 0.01;
+		
+		for (int i = 0; i < rounds; i++)
+		{
+			cout << "Community Detection Round " << i + 1 << "\n";
 
-		// Run kernel on the GPU that joins communities together according to SCoDA procedure
-		mainfor<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, degree_threshold, degree_cmt, src, dst, communities); 
+			degree_threshold = degree_threshold * degree_threshold;
+
+			// Run kernel on the GPU that joins communities together according to SCoDA procedure
+			mainfor<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, degree_threshold, degree_cmt, src, dst, communities); 
+			
+			cudaDeviceSynchronize(); 
+			error = cudaGetLastError(); 
+			if (error != cudaSuccess) { 
+				printf("CUDA error in SCoDA main loop: %s\n", cudaGetErrorString(error)); 
+				exit(-1); 
+			}
+		}
+
+		cout << "Hashing . . . " << "\n";
+
+		communities_hashing<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, communities, degree, huenumber, dst, src, degree_thresholdS, sketch, Degree_done); 
 		
 		cudaDeviceSynchronize(); 
 		error = cudaGetLastError(); 
 		if (error != cudaSuccess) { 
-			printf("CUDA error in SCoDA main loop: %s\n", cudaGetErrorString(error)); 
+			printf("CUDA error in community hashing: %s\n", cudaGetErrorString(error)); 
 			exit(-1); 
 		}
+		
+		cout << "Counting . . . " << "\n";
+
+		// Recompute the number of CUDA blocks based on COMMUNITIES
+		remain = (num_of_edges / huenumber) % blockSize;
+		numBlocks = (num_of_edges / huenumber + blockSize - remain) / blockSize;
+
+		// Finds the degrees of nodes of the supergraph
+		find_degree_S<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, communities, degree, degree_S, sketch, huenumber, dst, src); 
+		
+		cudaDeviceSynchronize(); 
+		error = cudaGetLastError(); 
+		if (error != cudaSuccess) { 
+			printf("CUDA error in finding degree_S: %s\n", cudaGetErrorString(error)); 
+			exit(-1); 
+		}
+		
+		// Write nodes categorized by community to file (for debugging)
+
+		/*std::ofstream out_file("../../../files/communities.txt");
+		for (uint32_t n = 0; n < num_of_nodes; ++n)
+		{
+			out_file << n << " " << communities[n] << "\n";
+		}
+		out_file.close();*/
+
+		// Measure passed execution time
+		end_cmt = high_resolution_clock::now();
+		long cmt_time = chrono::duration_cast<chrono::milliseconds>(end_cmt - start).count();
+		cout << "SCoDA algorithm finished in " << cmt_time << "ms \n";
+
 	}
-
-	cout << "Hashing . . . " << "\n";
-
-	communities_hashing<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, communities, degree, huenumber, dst, src, degree_thresholdS, sketch, Degree_done); 
-	
-	cudaDeviceSynchronize(); 
-	error = cudaGetLastError(); 
-	if (error != cudaSuccess) { 
-		printf("CUDA error in community hashing: %s\n", cudaGetErrorString(error)); 
-		exit(-1); 
-	}
-	
-	cout << "Counting . . . " << "\n";
-
-	// Recompute the number of CUDA blocks based on COMMUNITIES
-	remain = (num_of_edges / huenumber) % blockSize;
-	numBlocks = (num_of_edges / huenumber + blockSize - remain) / blockSize;
-
-	// Finds the degrees of nodes of the supergraph
-	find_degree_S<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, communities, degree, degree_S, sketch, huenumber, dst, src); 
-	
-	cudaDeviceSynchronize(); 
-	error = cudaGetLastError(); 
-	if (error != cudaSuccess) { 
-		printf("CUDA error in finding degree_S: %s\n", cudaGetErrorString(error)); 
-		exit(-1); 
-	}
-	
-	// Write nodes categorized by community to file (for debugging)
-
-	/*std::ofstream out_file("../../../files/communities.txt");
-	for (uint32_t n = 0; n < num_of_nodes; ++n)
-	{
-		out_file << n << " " << communities[n] << "\n";
-	}
-	out_file.close();*/
-
-	// Measure passed execution time
-	end_cmt = high_resolution_clock::now();
-	long cmt_time = chrono::duration_cast<chrono::milliseconds>(end_cmt - start).count();
-	cout << "SCoDA algorithm finished in " << cmt_time << "ms \n";
 	
 	// ######################################## ForceAtlas2
 
@@ -580,20 +616,16 @@ int main(int argc, const char** argv)
 	// Create the GraphLayout and ForceAtlas2 objects.
 	RPGraph::GraphLayout layout(graph);
 	RPGraph::ForceAtlas2* fa2;
-	
-	// Load the CUDA version of the algorithm
-	fa2 = new RPGraph::CUDAForceAtlas2(layout, approximate,
-		strong_gravity, gravity, scale);
 
-// Running the CPU version of SCoDA is not supported
-/*#ifdef __NVCC__
+	// If cuda is requested, use the CUDA implementation.
+#ifdef __NVCC__
 	if(cuda_requested)
 		fa2 = new RPGraph::CUDAForceAtlas2(layout, approximate, 
 			strong_gravity, gravity, scale);
 	else
 #endif
 	fa2 = new RPGraph::CPUForceAtlas2(layout, approximate,
-									  strong_gravity, gravity, scale);*/
+									  strong_gravity, gravity, scale);
 
 	cout << "Started ForceAtlas2 layout algorithm..." << "\n";
 
