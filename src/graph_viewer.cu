@@ -18,6 +18,8 @@ using namespace std;
 #include <algorithm> 
 #include <sstream>
 #include <iomanip>
+#include <map>
+#include <ctype.h>
 
 using namespace std::chrono;
 
@@ -188,6 +190,8 @@ void find_degree_S(int num_of_edges, int num_of_nodes, uint32_t* communities, ui
 
 }
 
+//============================================================
+
 // A helpful method for naming the output files
 std::string fill_zeros(int number, int digits)
 {
@@ -196,51 +200,105 @@ std::string fill_zeros(int number, int digits)
 	return ss.str();
 }
 
+// Store command line arguments to a map
+void store_argv(int argc, const char** argv, map<string, string>& map)
+{
+	const char* const parameter_keys[16] = {
+		"program_call", "cuda_requested", "max_iterations", "num_screenshots", "strong_gravity", "scale", "gravity", "approximate",
+		"in_path", "out_path", "out_format", "image_w", "image_h", "degree_threshold", "rounds", "huenumber"
+	}; 
+	if (argc == 16) {
+		for (int i = 0; i < argc; i++)
+		{
+			string key = parameter_keys[i];
+			string value = argv[i];
+			map[key] = value;
+		}
+	}
+}
+
+// Read the input file and store the fields to a map
+void read_args_from_file(string file_path, map<string, string>& map)
+{
+	std::ifstream file(file_path);
+	string line;
+	while (std::getline(file, line))
+	{
+		std::istringstream ss(line);
+		string key, value;
+		if (std::getline(ss, key, '='))
+		{
+			if (std::getline(ss, value))
+			{
+				// Erase unnecessary spaces
+				value.erase(remove_if(value.begin(), value.end(), ::isspace), value.end());
+				map[key] = value;
+			}
+		}
+	}
+}
+
+// Set the default values for the parameters
+void set_default_args(map<string, string>& map)
+{
+	// Set default values for the parameters, following
+	// ./graph_viewer gpu 500 1 sg 80 1 approximate ~/net/web-BerkStan.txt  ~/output png 1024 1024 11 5 6500 
+	map["program_call"] = "";
+	map["cuda_requested"] = "gpu";
+	map["max_iterations"] = "500";
+	map["num_screenshots"] = "1";
+	map["strong_gravity"] = "sg";
+	map["scale"] = "80";
+	map["gravity"] = "1";
+	map["approximate"] = "approximate";
+	map["in_path"] = "../../../net/web-BerkStan.txt";
+	map["out_path"] = "../../../output/";
+	map["out_format"] = "png";
+	map["image_w"] = "1024";
+	map["image_h"] = "1024";
+	map["degree_threshold"] = "11";
+	map["rounds"] = "5";
+	map["huenumber"] = "6500";
+}
+
 //============================================================
 
 int main(int argc, const char** argv)
 {
-	cout << "BigGraphVis algorithm started" << "\n";
+	// --- Parse all the arguments ---
 
 	// Check command-line usage
-	if (argc < 15)
+	if (argc < 2 || (argc > 8 && argc < 16))
 	{
 		fprintf(stderr, "Usage: graph_viewer gpu|cpu max_iterations num_snaps sg|wg scale gravity exact|approximate edgelist_path out_path png|csv|bin image_w image_h degree_threshold rounds heuristic\n");
+		fprintf(stderr, "Or:    graph_viewer -c config_file ...\n");
 		exit(EXIT_FAILURE);
 	}
+
+	// Either use the command-line arguments or the config file
+	map<string, string> arg_map;
+	if (argc < 16) {
+		set_default_args(arg_map);
+		// Use listed config files
+		for (int i = 1; i < argc; i++)
+		{
+			string arg = argv[i];
+			if (arg == "-c")
+				continue;
+			read_args_from_file(arg, arg_map);
+		}
+	} else {
+		// Use command-line arguments
+		store_argv(argc, argv, arg_map);
+	}
+
+	// --- Parsing finished ---
 
 	// Measure the execution time
 	auto start = high_resolution_clock::now();
 	auto end = high_resolution_clock::now();
 	auto end_cmt = high_resolution_clock::now();
 
-	// --- Parse all the arguments ---
-
-	// ForceAtlas2 parameters
-	const bool cuda_requested = std::string(argv[1]) == "gpu" or std::string(argv[1]) == "cuda";
-	const int max_iterations = std::stoi(argv[2]);
-	const int num_screenshots = std::stoi(argv[3]);
-	const bool strong_gravity = std::string(argv[4]) == "sg";
-	const float scale = std::stof(argv[5]);
-	const float gravity = std::stof(argv[6]);
-	const bool approximate = std::string(argv[7]) == "approximate";
-
-	// Filepaths for I/O
-	std::string in_path = argv[8];
-	std::string out_path = argv[9];
-
-	// Output format and parameters
-	std::string out_format = argv[10];
-	int image_w = std::stoi(argv[11]);
-	int image_h = std::stoi(argv[12]);
-
-	// SCoDA Community Detection parameters
-	uint32_t degree_threshold = std::stoul(argv[13]);
-	uint32_t degree_thresholdS = degree_threshold;
-	int rounds = std::atoi(argv[14]); // Number of  SCoDA rounds
-	int huenumber = std::stoul(argv[15]); // Heuristic number
-
-	
 	cout << "Initialization" << "\n";
 
 	// Use a consistent random seed for reproducibility 
@@ -252,6 +310,17 @@ int main(int argc, const char** argv)
 	uint32_t *communities, *src, *dst, num_of_edges, num_of_nodes;
 	uint32_t *degree, *degree_cmt, *degree_S;
 	int src_id, dst_id, *sketch, *h1, *h2, *h3, *h4, *Degree_done, *weight_S;
+
+	// SCoDA Community Detection parameters
+	uint32_t degree_threshold = std::stoul(arg_map["degree_threshold"]);
+	uint32_t degree_thresholdS = degree_threshold;
+
+	int rounds = std::stoi(arg_map["rounds"]);  // Number of  SCoDA rounds
+	int huenumber = std::stoul(arg_map["huenumber"]);   // Heuristic number
+	
+	// Filepaths for I/O
+	std::string in_path = arg_map["in_path"];
+	std::string out_path = arg_map["out_path"];
 
 	// Read the input file and count the number of nodes and edges
 	ifstream inFile;
@@ -442,6 +511,20 @@ int main(int argc, const char** argv)
 	/* 
 	* The following is an applied version of the ForceAtlas2 algorithm
 	*/
+
+	// ForceAtlas2 parameters
+	const bool cuda_requested = std::string(arg_map["cuda_requested"]) == "gpu" or std::string(arg_map["cuda_requested"]) == "cuda";
+	const int max_iterations = std::stoi(arg_map["max_iterations"]);
+	const int num_screenshots = std::stoi(arg_map["num_screenshots"]);
+	const bool strong_gravity = std::string(arg_map["strong_gravity"]) == "sg" or std::string(arg_map["strong_gravity"]) == "strong";
+	const float scale = std::stof(arg_map["scale"]);
+	const float gravity = std::stof(arg_map["gravity"]);
+	const bool approximate = std::string(arg_map["approximate"]) == "approximate" or std::string(arg_map["approximate"]) == "yes";
+
+	// Output format and parameters
+	std::string out_format = arg_map["out_format"];
+	int image_w = std::stoi(arg_map["image_w"]);
+	int image_h = std::stoi(arg_map["image_h"]);
 
 	cout << "--- Force Atlas 2 ---" << "\n";
 
