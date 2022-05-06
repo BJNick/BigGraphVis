@@ -104,12 +104,6 @@ namespace RPGraph
             if (dist == 0.0 || field_direction.magnitude() == 0.0)
                 continue; // Cannot compute the angle when either is zero
 
-            // TODO: Add b, c, alpha and beta as input parameters
-            float field_strength = 16;
-            float c_m = 1;
-            float alpha = 1;
-            float beta = 1;
-
             Real2DVector force_on_n = magnetic_equation(field_direction, disp, field_strength, c_m, alpha, beta);
             
             Real2DVector force_on_t = force_on_n * -1;
@@ -142,8 +136,6 @@ namespace RPGraph
 
     Real2DVector CPUForceAtlas2::magnetic_equation(Real2DVector m, Real2DVector d, float b, float c, float alpha, float beta) 
     {
-        bool bi_directional = false; // TODO: Add as input parameter
-
         float dist = std::sqrt(d.magnitude());
         Real2DVector force_on_n = Real2DVector(0.0, 0.0);
         if (!bi_directional)
@@ -155,8 +147,6 @@ namespace RPGraph
     
     Real2DVector CPUForceAtlas2::get_magnetic_field(Real2DVector pos) 
     {
-        std::string field_type = "polar"; // TODO: Make it an input parameter
-
         if (field_type == "none") {
             return Real2DVector(0, 0);
         } else if (field_type == "parallel") {
@@ -209,7 +199,7 @@ namespace RPGraph
 
         else
         {
-            f_g = k_g*mass(n) / d;
+            f_g = k_g*mass(n) / d; 
         }
 
         forces[n] += (Real2DVector(-layout.getX(n), -layout.getY(n)) * f_g);

@@ -513,6 +513,8 @@ int main(int argc, const char** argv)
 	fa2 = new RPGraph::CPUForceAtlas2(layout, approximate,
 		strong_gravity, gravity, scale);
 
+	fa2->setMagneticParameters("polar", false, 2, 1, 1.5, 1);
+
 // Running the CPU version of SCoDA is not supported
 /*#ifdef __NVCC__
 	if(cuda_requested)

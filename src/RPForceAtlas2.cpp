@@ -71,6 +71,16 @@ namespace RPGraph
         k_g = g;
     }
 
+    void ForceAtlas2::setMagneticParameters(std::string field_type, bool bi_directional, float field_strength, float c_m, float alpha, float beta) 
+    {
+        this->field_type = field_type;
+        this->bi_directional = bi_directional;
+        this->field_strength = field_strength;
+        this->c_m = c_m;
+        this->alpha = alpha;
+        this->beta = beta;
+    }
+
     float ForceAtlas2::mass(nid_t n)
     {
         return layout.graph.degree(n) + 1.0;

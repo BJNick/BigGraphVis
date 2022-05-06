@@ -43,6 +43,9 @@ namespace RPGraph
             float mass(nid_t n);
             bool prevent_overlap, use_barneshut, use_linlog, strong_gravity;
 
+            void setMagneticParameters(std::string field_type, bool bi_directional, float field_strength, float c_m, float alpha, float beta);
+
+
         protected:
             int iteration;
             float k_r, k_g; // scalars for repulsive and gravitational force.
@@ -57,6 +60,14 @@ namespace RPGraph
             float theta;   // Accuracy
             float epssq;   // Softening (Epsilon, squared)
             float itolsq;  // Inverse tolerance, squared
+
+            // Magnetic parameters
+            std::string field_type;
+            bool bi_directional;
+            float field_strength;
+            float c_m;
+            float alpha;
+            float beta;
     };
 }
 #endif
