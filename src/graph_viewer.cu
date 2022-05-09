@@ -195,6 +195,8 @@ void find_degree_S(int num_of_edges, int num_of_nodes, uint32_t* communities, ui
 const int num_of_parameters = 30; // arbitrary number
 
 std::string parameter_keys[num_of_parameters] = {
+	"config_folder",
+	// ForceAtlas2 parameters:
 	"program_call", "cuda_requested", "max_iterations", "num_screenshots", "strong_gravity", "scale", "gravity", "approximate",
 	"in_path", "out_path", "out_format", "image_w", "image_h", "degree_threshold", "rounds", "huenumber",
 	// Extra parameters:
@@ -202,7 +204,7 @@ std::string parameter_keys[num_of_parameters] = {
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	// Node/edge alpha parameters:
-	"node_alpha", "edge_alpha",
+	"node_alpha", "edge_alpha", 
 }; 
 
 // A helpful method for naming the output files
@@ -229,6 +231,16 @@ void store_argv(int argc, const char** argv, map<string, string>& map)
 // Read the input file and store the fields to a map
 void read_args_from_file(string file_path, map<string, string>& map)
 {
+	// Check if this is a file name not complete path
+	bool name_only = file_path.find("/") == string::npos;
+	if (name_only) 
+	{
+		// Check if file extension is ommitted
+		if (file_path.find(".") == string::npos)
+			file_path += ".txt";
+		file_path = map["config_folder"] + file_path;
+	}
+
 	if (!is_file_exists(file_path))
 	{
 		cout << "File does not exist " << file_path << "\n";
@@ -275,6 +287,7 @@ void read_args_from_file(string file_path, map<string, string>& map)
 // Set the default values for the parameters
 void set_default_args(map<string, string>& map)
 {
+	map["config_folder"] = "../../../config/";
 	// Set default values for the parameters, following
 	// ./graph_viewer gpu 500 1 sg 80 1 approximate ~/net/web-BerkStan.txt  ~/output png 1024 1024 11 5 6500 
 	map["program_call"] = "";
