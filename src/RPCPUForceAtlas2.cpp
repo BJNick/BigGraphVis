@@ -149,7 +149,7 @@ namespace RPGraph
     {
         if (field_type == "none") {
             return Real2DVector(0, 0);
-        } else if (field_type == "parallel") {
+        } else if (field_type == "parallel" || field_type == "linear") {
             return Real2DVector(1, 0);
         } else if (field_type == "polar") {
             return pos.getNormalizedFinite();
