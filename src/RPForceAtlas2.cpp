@@ -53,7 +53,10 @@ namespace RPGraph
 
         layout.randomizePositions();
 
+        // Additional parameters
         use_magnetic_field = false;
+        k_attraction = 1;
+        attraction_exponent = 1;
     }
 
     ForceAtlas2::~ForceAtlas2(){};

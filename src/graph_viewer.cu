@@ -201,7 +201,7 @@ std::string parameter_keys[num_of_parameters] = {
 	// Configuration file parameters:
 	"config_folder", "config_chain", "chain_output_name", "chain_separator", "include_timestamp",
 	// Extra parameters:
-	"community_detection", 
+	"community_detection", "attraction_exponent", "attraction",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	// Node/edge alpha parameters:
@@ -320,6 +320,8 @@ void set_default_args(map<string, string>& map)
 	map["include_timestamp"] = "true";
 	// Extra parameters
 	map["community_detection"] = "SCoDA";
+	map["attraction_exponent"] = "1";
+	map["attraction"] = "1";
 	// Magnetic force parameters
 	map["use_magnetic_field"] = "false";
 	map["field_type"] = "linear";
@@ -675,6 +677,11 @@ int main(int argc, const char** argv)
 #endif
 	fa2 = new RPGraph::CPUForceAtlas2(layout, approximate,
 									  strong_gravity, gravity, scale);*/
+
+	// FA 2 parameters
+	fa2->attraction_exponent = std::stof(arg_map["attraction_exponent"]);
+	fa2->k_attraction = std::stof(arg_map["attraction"]);
+
 
 	// COSMETIC PARAMETERS
 	layout.setAlphaParameters(std::stof(arg_map["node_alpha"]), std::stof(arg_map["edge_alpha"]));

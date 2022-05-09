@@ -63,16 +63,27 @@ namespace RPGraph
             // Here we define the magnitude of the attractive force `f_a'
             // *divided* by the length distance between `n' and `t', i.e. `f_a_over_d'
             float f_a_over_d;
+            float dist = layout.getDistance(n, t);
+
             if (use_linlog)
             {
-                float dist = layout.getDistance(n, t);
                 f_a_over_d = dist == 0.0 ? std::numeric_limits<float>::max() : logf(1+dist) / dist;
             }
-
             else
             {
                 f_a_over_d = 1.0;
             }
+
+            // ADDITIONAL FACTOR: attraction_exponent and k_attraction
+            float exp_factor = powf(dist, attraction_exponent-1.0) * k_attraction;
+            // Check if not finite
+            if (!std::isfinite(exp_factor))
+            {
+                fprintf(stderr, "exp_factor is not finite, dist = %f\n", dist);
+                exit(EXIT_FAILURE);
+            }
+
+            f_a_over_d *= exp_factor;
 
             f += layout.getDistanceVector(n, t) * f_a_over_d;
 
