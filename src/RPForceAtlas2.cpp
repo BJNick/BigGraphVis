@@ -52,6 +52,8 @@ namespace RPGraph
         use_linlog = false;
 
         layout.randomizePositions();
+
+        use_magnetic_field = false;
     }
 
     ForceAtlas2::~ForceAtlas2(){};
