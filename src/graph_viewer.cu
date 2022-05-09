@@ -192,13 +192,14 @@ void find_degree_S(int num_of_edges, int num_of_nodes, uint32_t* communities, ui
 
 //============================================================
 
-const int num_of_parameters = 30; // arbitrary number
+const int num_of_parameters = 40; // arbitrary number
 
 std::string parameter_keys[num_of_parameters] = {
-	"config_folder",
 	// ForceAtlas2 parameters:
 	"program_call", "cuda_requested", "max_iterations", "num_screenshots", "strong_gravity", "scale", "gravity", "approximate",
 	"in_path", "out_path", "out_format", "image_w", "image_h", "degree_threshold", "rounds", "huenumber",
+	// Configuration file parameters:
+	"config_folder", "config_chain", "chain_output_name", "chain_separator", "include_timestamp",
 	// Extra parameters:
 	"community_detection", 
 	// Magnetic field parameters:
@@ -246,6 +247,7 @@ void read_args_from_file(string file_path, map<string, string>& map)
 		cout << "File does not exist " << file_path << "\n";
 		exit(EXIT_FAILURE);
 	}
+
 	std::ifstream file(file_path);
 	string line;
 	while (std::getline(file, line))
@@ -277,17 +279,21 @@ void read_args_from_file(string file_path, map<string, string>& map)
 			if (std::getline(ss, value))
 			{
 				// Erase unnecessary spaces
-				value.erase(remove_if(value.begin(), value.end(), ::isspace), value.end());
+				value.erase(value.find_last_not_of("\n\r\t")+1);
 				map[key] = value;
 			}
 		}
 	}
+
+	// Store all config names in a chain
+	std::string just_name = file_path.substr(file_path.find_last_of("/") + 1);
+	just_name = just_name.substr(0, just_name.find_last_of("."));
+	map["config_chain"] += just_name + map["chain_separator"];
 }
 
 // Set the default values for the parameters
 void set_default_args(map<string, string>& map)
 {
-	map["config_folder"] = "../../../config/";
 	// Set default values for the parameters, following
 	// ./graph_viewer gpu 500 1 sg 80 1 approximate ~/net/web-BerkStan.txt  ~/output png 1024 1024 11 5 6500 
 	map["program_call"] = "";
@@ -306,6 +312,12 @@ void set_default_args(map<string, string>& map)
 	map["degree_threshold"] = "11";
 	map["rounds"] = "5";
 	map["huenumber"] = "6500";
+	// Configuration file parameters
+	map["config_folder"] = "../../../config/";
+	map["config_chain"] = "";
+	map["chain_output_name"] = "false";
+	map["chain_separator"] = " ";
+	map["include_timestamp"] = "true";
 	// Extra parameters
 	map["community_detection"] = "SCoDA";
 	// Magnetic force parameters
@@ -337,8 +349,9 @@ int main(int argc, const char** argv)
 
 	// Either use the command-line arguments or the config file
 	map<string, string> arg_map;
+	set_default_args(arg_map);
+
 	if (argc < 16) {
-		set_default_args(arg_map);
 		// Use listed config files
 		for (int i = 1; i < argc; i++)
 		{
@@ -703,12 +716,21 @@ int main(int argc, const char** argv)
 			// Determine output filename
 			std::string edgelist_basename = basename(in_path);
 			time_t now = time(0);
-			/*std::string out_filename = edgelist_basename + to_string(rounds) + "_" 
-				+ to_string(degree_threshold) + "_" + std::to_string(iteration) + "_" 
-				+ std::to_string(huenumber) + "_" + std::to_string(now) + "." + out_format;*/
 
 			// Use a simplified output name in lexico-graphical order
-			std::string out_filename = edgelist_basename + "_M_" + std::to_string(now) + "_" + fill_zeros(iteration, 4) + "." + out_format;	
+			std::string timestamp = std::to_string(now) + "_";
+
+			if (arg_map["include_timestamp"] != "true")
+				timestamp = "";
+
+			std::string out_filename = edgelist_basename + "_" + timestamp + fill_zeros(iteration, 4) + "." + out_format;	
+			// Example: "tree_edgelist.txt_123456789_0500.png"
+			
+			// Or use a config chain name instead
+			if (arg_map["chain_output_name"] == "true")
+				out_filename = arg_map["config_chain"] + timestamp + fill_zeros(iteration, 4) + "." + out_format;
+			// Example: "tree m-polar 123456789_0500.png"
+
 			std::string out_filepath = out_path + "/" + out_filename;
 
 			printf("Starting iteration %d (%.2f%%), writing %s...", iteration, 100 * (float)iteration / max_iterations, out_format.c_str());
