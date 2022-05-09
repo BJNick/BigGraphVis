@@ -201,7 +201,7 @@ std::string parameter_keys[num_of_parameters] = {
 	// Configuration file parameters:
 	"config_folder", "config_chain", "chain_output_name", "chain_separator", "include_timestamp",
 	// Extra parameters:
-	"community_detection", "attraction_exponent", "attraction",
+	"community_detection", "attraction_exponent", "attraction", "random_seed",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	// Node/edge alpha parameters:
@@ -322,6 +322,7 @@ void set_default_args(map<string, string>& map)
 	map["community_detection"] = "SCoDA";
 	map["attraction_exponent"] = "1";
 	map["attraction"] = "1";
+	map["random_seed"] = "1234";
 	// Magnetic force parameters
 	map["use_magnetic_field"] = "false";
 	map["field_type"] = "linear";
@@ -378,7 +379,7 @@ int main(int argc, const char** argv)
 
 	// Use a consistent random seed for reproducibility 
 	// (note: this may have no effect on CUDA's random generation)
-	srandom(1234);
+	srandom(stoi(arg_map["random_seed"]));
 	
 	// Allocate variables
 	curandState_t* states; // CUDA random number generation states
