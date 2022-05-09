@@ -18,6 +18,8 @@ using namespace std;
 #include <algorithm> 
 #include <sstream>
 #include <iomanip>
+#include <map>
+#include <ctype.h>
 
 using namespace std::chrono;
 
@@ -188,6 +190,17 @@ void find_degree_S(int num_of_edges, int num_of_nodes, uint32_t* communities, ui
 
 }
 
+//============================================================
+
+const int num_of_parameters = 17;
+
+std::string parameter_keys[num_of_parameters] = {
+	"program_call", "cuda_requested", "max_iterations", "num_screenshots", "strong_gravity", "scale", "gravity", "approximate",
+	"in_path", "out_path", "out_format", "image_w", "image_h", "degree_threshold", "rounds", "huenumber",
+	// Extra parameters:
+	"community_detection"
+}; 
+
 // A helpful method for naming the output files
 std::string fill_zeros(int number, int digits)
 {
@@ -196,59 +209,160 @@ std::string fill_zeros(int number, int digits)
 	return ss.str();
 }
 
+// Store command line arguments to a map
+void store_argv(int argc, const char** argv, map<string, string>& map)
+{
+	if (argc == 16) {
+		for (int i = 0; i < argc; i++)
+		{
+			string key = parameter_keys[i];
+			string value = argv[i];
+			map[key] = value;
+		}
+	}
+}
+
+// Read the input file and store the fields to a map
+void read_args_from_file(string file_path, map<string, string>& map)
+{
+	if (!is_file_exists(file_path))
+	{
+		cout << "File does not exist " << file_path << "\n";
+		exit(EXIT_FAILURE);
+	}
+	std::ifstream file(file_path);
+	string line;
+	while (std::getline(file, line))
+	{
+		// Skip lines that start with #, they are comments
+		if (line[0] == '#')
+			continue;
+		std::istringstream ss(line);
+		string key, value;
+		if (std::getline(ss, key, '='))
+		{
+			// If the key is whitespace, skip the line
+			key.erase(remove_if(key.begin(), key.end(), ::isspace), key.end());
+			if (key.empty())
+				continue;
+			// Make sure the key is in the list of keys
+			bool found = (std::find(parameter_keys, parameter_keys + num_of_parameters, key) != parameter_keys + num_of_parameters);
+			if (!found)
+			{
+				cout << "Config key \"" << key << "\" is not a valid key\n";
+				cout << "Valid keys are: ";
+				for (int i = 0; i < num_of_parameters; i++)
+				{
+					cout << parameter_keys[i] << ", ";
+				}
+				cout << "\n";
+				exit(EXIT_FAILURE);
+			}
+			if (std::getline(ss, value))
+			{
+				// Erase unnecessary spaces
+				value.erase(remove_if(value.begin(), value.end(), ::isspace), value.end());
+				map[key] = value;
+			}
+		}
+	}
+}
+
+// Set the default values for the parameters
+void set_default_args(map<string, string>& map)
+{
+	// Set default values for the parameters, following
+	// ./graph_viewer gpu 500 1 sg 80 1 approximate ~/net/web-BerkStan.txt  ~/output png 1024 1024 11 5 6500 
+	map["program_call"] = "";
+	map["cuda_requested"] = "gpu";
+	map["max_iterations"] = "500";
+	map["num_screenshots"] = "1";
+	map["strong_gravity"] = "sg";
+	map["scale"] = "80";
+	map["gravity"] = "1";
+	map["approximate"] = "approximate";
+	map["in_path"] = "../../../net/web-BerkStan.txt";
+	map["out_path"] = "../../../output/";
+	map["out_format"] = "png";
+	map["image_w"] = "1024";
+	map["image_h"] = "1024";
+	map["degree_threshold"] = "11";
+	map["rounds"] = "5";
+	map["huenumber"] = "6500";
+	// Extra parameters
+	map["community_detection"] = "SCoDA";
+}
+
 //============================================================
 
 int main(int argc, const char** argv)
 {
-	cout << "BigGraphVis algorithm started" << "\n";
-
-	// Use a consistent random seed for reproducibility 
-	// (note: this may have no effect on CUDA's random generation)
-	srandom(1234);
+	// --- Parse all the arguments ---
 
 	// Check command-line usage
-	if (argc < 15)
+	if (argc < 2 || (argc > 8 && argc < 16))
 	{
 		fprintf(stderr, "Usage: graph_viewer gpu|cpu max_iterations num_snaps sg|wg scale gravity exact|approximate edgelist_path out_path png|csv|bin image_w image_h degree_threshold rounds heuristic\n");
+		fprintf(stderr, "Or:    graph_viewer -c config_file ...\n");
 		exit(EXIT_FAILURE);
 	}
+
+	// Either use the command-line arguments or the config file
+	map<string, string> arg_map;
+	if (argc < 16) {
+		set_default_args(arg_map);
+		// Use listed config files
+		for (int i = 1; i < argc; i++)
+		{
+			string arg = argv[i];
+			if (arg == "-c")
+				continue;
+			read_args_from_file(arg, arg_map);
+		}
+	} else {
+		// Use command-line arguments
+		store_argv(argc, argv, arg_map);
+	}
+
+	// --- Parsing finished ---
 
 	// Measure the execution time
 	auto start = high_resolution_clock::now();
 	auto end = high_resolution_clock::now();
 	auto end_cmt = high_resolution_clock::now();
+
+	cout << "Initialization" << "\n";
+
+	// Use a consistent random seed for reproducibility 
+	// (note: this may have no effect on CUDA's random generation)
+	srandom(1234);
 	
 	// Allocate variables
 	curandState_t* states; // CUDA random number generation states
-	uint32_t *communities, *src, *dst, degree_threshold, degree_thresholdS, num_of_edges, num_of_nodes;
+	uint32_t *communities, *src, *dst, num_of_edges, num_of_nodes;
 	uint32_t *degree, *degree_cmt, *degree_S;
-	int huenumber, src_id, dst_id, rounds, *sketch, *h1, *h2, *h3, *h4, *Degree_done, *weight_S;
+	int src_id, dst_id, *sketch, *h1, *h2, *h3, *h4, *Degree_done, *weight_S;
 
-	// Input the heuristic number
-	// SUGGESTION: Parse all arguments at once, in order, at the beginning of the program
-	std::string sss = argv[15];  
-	huenumber = std::stoul(sss.c_str());
+	// SCoDA Community Detection parameters
+	uint32_t degree_threshold = std::stoul(arg_map["degree_threshold"]);
+	uint32_t degree_thresholdS = degree_threshold;
 
-	// Input the degree threshold used by the SCoDA algorithm (Hollocou et al.)
-	std::string s = argv[13];
-	degree_threshold = std::stoul(s.c_str());
-	degree_thresholdS = degree_threshold;
+	int rounds = std::stoi(arg_map["rounds"]);  // Number of  SCoDA rounds
+	int huenumber = std::stoul(arg_map["huenumber"]);   // Heuristic number
 	
-	// Input the number of rounds used by  the SCoDA algorithm (Hollocou et al.)
-	s = argv[14];
-	rounds = std::atoi(s.c_str());
-	
-	cout << "Initialization" << "\n";
+	// Filepaths for I/O
+	std::string in_path = arg_map["in_path"];
+	std::string out_path = arg_map["out_path"];
 
 	// Read the input file and count the number of nodes and edges
 	ifstream inFile;
 
-	if (!is_file_exists(argv[8])) {
-		cout << "error: File not found: " << argv[8] << "\n";
+	if (!is_file_exists(in_path)) {
+		cout << "error: File not found: " << in_path << "\n";
 		exit(EXIT_FAILURE);
 	}
 
-	inFile.open(argv[8]);
+	inFile.open(in_path);
 
 	std::string src_id_s, dst_id_s;
 	num_of_nodes = 0;
@@ -334,7 +448,7 @@ int main(int argc, const char** argv)
 	// Read the input file again, now storing the edge connections
 	// in the CUDA allocated variables
 
-	inFile.open(argv[8]);
+	inFile.open(in_path);
 	for (int i = 0; inFile >> src_id_s >> dst_id_s != NULL; i++)
 	{
 		if (isdigit(src_id_s[0]))
@@ -360,73 +474,76 @@ int main(int argc, const char** argv)
 	* community detection, by Hollocou et al.
 	*/
 
-	cout << "--- SCoDA Community Detection ---" << "\n";
-	
-	// Recompute the number of CUDA blocks based on total EDGES
-	remain = num_of_edges % blockSize;
-	numBlocks = num_of_edges / blockSize + (remain > 0 ? 1 : 0);
+	if (arg_map["community_detection"] == "SCoDA") {
 
-	if (rounds == 0)
-		rounds = num_of_edges * 0.01;
-	
-	// NO COMMUNITY DETECTION FOR NOW
-	/*for (int i = 0; i < rounds; i++)
-	{
-		cout << "Community Detection Round " << i + 1 << "\n";
+		cout << "--- SCoDA Community Detection ---" << "\n";
+		
+		// Recompute the number of CUDA blocks based on total EDGES
+		remain = num_of_edges % blockSize;
+		numBlocks = num_of_edges / blockSize + (remain > 0 ? 1 : 0);
 
-		degree_threshold = degree_threshold * degree_threshold;
+		if (rounds == 0)
+			rounds = num_of_edges * 0.01;
+		
+		for (int i = 0; i < rounds; i++)
+		{
+			cout << "Community Detection Round " << i + 1 << "\n";
 
-		// Run kernel on the GPU that joins communities together according to SCoDA procedure
-		mainfor<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, degree_threshold, degree_cmt, src, dst, communities); 
+			degree_threshold = degree_threshold * degree_threshold;
+
+			// Run kernel on the GPU that joins communities together according to SCoDA procedure
+			mainfor<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, degree_threshold, degree_cmt, src, dst, communities); 
+			
+			cudaDeviceSynchronize(); 
+			error = cudaGetLastError(); 
+			if (error != cudaSuccess) { 
+				printf("CUDA error in SCoDA main loop: %s\n", cudaGetErrorString(error)); 
+				exit(-1); 
+			}
+		}
+
+		cout << "Hashing . . . " << "\n";
+
+		communities_hashing<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, communities, degree, huenumber, dst, src, degree_thresholdS, sketch, Degree_done); 
 		
 		cudaDeviceSynchronize(); 
 		error = cudaGetLastError(); 
 		if (error != cudaSuccess) { 
-			printf("CUDA error in SCoDA main loop: %s\n", cudaGetErrorString(error)); 
+			printf("CUDA error in community hashing: %s\n", cudaGetErrorString(error)); 
 			exit(-1); 
 		}
+		
+		cout << "Counting . . . " << "\n";
+
+		// Recompute the number of CUDA blocks based on COMMUNITIES
+		remain = (num_of_edges / huenumber) % blockSize;
+		numBlocks = (num_of_edges / huenumber + blockSize - remain) / blockSize;
+
+		// Finds the degrees of nodes of the supergraph
+		find_degree_S<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, communities, degree, degree_S, sketch, huenumber, dst, src); 
+		
+		cudaDeviceSynchronize(); 
+		error = cudaGetLastError(); 
+		if (error != cudaSuccess) { 
+			printf("CUDA error in finding degree_S: %s\n", cudaGetErrorString(error)); 
+			exit(-1); 
+		}
+		
+		// Write nodes categorized by community to file (for debugging)
+
+		/*std::ofstream out_file("../../../files/communities.txt");
+		for (uint32_t n = 0; n < num_of_nodes; ++n)
+		{
+			out_file << n << " " << communities[n] << "\n";
+		}
+		out_file.close();*/
+
+		// Measure passed execution time
+		end_cmt = high_resolution_clock::now();
+		long cmt_time = chrono::duration_cast<chrono::milliseconds>(end_cmt - start).count();
+		cout << "SCoDA algorithm finished in " << cmt_time << "ms \n";
+
 	}
-
-	cout << "Hashing . . . " << "\n";
-
-	communities_hashing<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, communities, degree, huenumber, dst, src, degree_thresholdS, sketch, Degree_done); 
-	
-	cudaDeviceSynchronize(); 
-	error = cudaGetLastError(); 
-	if (error != cudaSuccess) { 
-		printf("CUDA error in community hashing: %s\n", cudaGetErrorString(error)); 
-		exit(-1); 
-	}
-	
-	cout << "Counting . . . " << "\n";
-
-	// Recompute the number of CUDA blocks based on COMMUNITIES
-	remain = (num_of_edges / huenumber) % blockSize;
-	numBlocks = (num_of_edges / huenumber + blockSize - remain) / blockSize;
-
-	// Finds the degrees of nodes of the supergraph
-	find_degree_S<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, communities, degree, degree_S, sketch, huenumber, dst, src); 
-	
-	cudaDeviceSynchronize(); 
-	error = cudaGetLastError(); 
-	if (error != cudaSuccess) { 
-		printf("CUDA error in finding degree_S: %s\n", cudaGetErrorString(error)); 
-		exit(-1); 
-	}
-	
-	// Write nodes categorized by community to file (for debugging)
-
-	/*std::ofstream out_file("../../../files/communities.txt");
-	for (uint32_t n = 0; n < num_of_nodes; ++n)
-	{
-		out_file << n << " " << communities[n] << "\n";
-	}
-	out_file.close();*/
-
-	// Measure passed execution time
-	end_cmt = high_resolution_clock::now();
-	long cmt_time = chrono::duration_cast<chrono::milliseconds>(end_cmt - start).count();
-	cout << "SCoDA algorithm finished in " << cmt_time << "ms \n";
 	
 	// ######################################## ForceAtlas2
 
@@ -434,26 +551,21 @@ int main(int argc, const char** argv)
 	* The following is an applied version of the ForceAtlas2 algorithm
 	*/
 
+	// ForceAtlas2 parameters
+	const bool cuda_requested = std::string(arg_map["cuda_requested"]) == "gpu" or std::string(arg_map["cuda_requested"]) == "cuda";
+	const int max_iterations = std::stoi(arg_map["max_iterations"]);
+	const int num_screenshots = std::stoi(arg_map["num_screenshots"]);
+	const bool strong_gravity = std::string(arg_map["strong_gravity"]) == "sg" or std::string(arg_map["strong_gravity"]) == "strong";
+	const float scale = std::stof(arg_map["scale"]);
+	const float gravity = std::stof(arg_map["gravity"]);
+	const bool approximate = std::string(arg_map["approximate"]) == "approximate" or std::string(arg_map["approximate"]) == "yes";
+
+	// Output format and parameters
+	std::string out_format = arg_map["out_format"];
+	int image_w = std::stoi(arg_map["image_w"]);
+	int image_h = std::stoi(arg_map["image_h"]);
+
 	cout << "--- Force Atlas 2 ---" << "\n";
-
-	// Parse ForceAtlas2 input arguments
-	const bool cuda_requested = std::string(argv[1]) == "gpu" or std::string(argv[1]) == "cuda";
-	const int max_iterations = std::stoi(argv[2]);
-	const int num_screenshots = std::stoi(argv[3]);
-	const bool strong_gravity = std::string(argv[4]) == "sg";
-	const float scale = std::stof(argv[5]);
-	const float gravity = std::stof(argv[6]);
-	const bool approximate = std::string(argv[7]) == "approximate";
-
-	// Parse filepaths for I/O
-	std::string edgelist_path = argv[8];
-	std::string out_path = argv[9];
-
-	// Parse output format and parameters
-	int image_w, image_h;
-	std::string out_format = argv[10];
-	image_w = std::stoi(argv[11]);
-	image_h = std::stoi(argv[12]);
 
 	if (cuda_requested and not approximate)
 	{
@@ -462,9 +574,9 @@ int main(int argc, const char** argv)
 	}
 
 	// Check in_path and out_path
-	if (!is_file_exists(edgelist_path))
+	if (!is_file_exists(in_path))
 	{
-		fprintf(stderr, "error: No edgelist at %s\n", edgelist_path.c_str());
+		fprintf(stderr, "error: No edgelist at %s\n", in_path.c_str());
 		exit(EXIT_FAILURE);
 	}
 
@@ -546,7 +658,7 @@ int main(int argc, const char** argv)
 		if (num_screenshots > 0 && (iteration % snap_period == 0 || iteration == max_iterations))
 		{
 			// Determine output filename
-			std::string edgelist_basename = basename(edgelist_path);
+			std::string edgelist_basename = basename(in_path);
 			time_t now = time(0);
 			/*std::string out_filename = edgelist_basename + to_string(rounds) + "_" 
 				+ to_string(degree_threshold) + "_" + std::to_string(iteration) + "_" 
