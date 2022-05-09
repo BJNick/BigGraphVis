@@ -192,13 +192,15 @@ void find_degree_S(int num_of_edges, int num_of_nodes, uint32_t* communities, ui
 
 //============================================================
 
-const int num_of_parameters = 17;
+const int num_of_parameters = 30; // arbitrary number
 
 std::string parameter_keys[num_of_parameters] = {
 	"program_call", "cuda_requested", "max_iterations", "num_screenshots", "strong_gravity", "scale", "gravity", "approximate",
 	"in_path", "out_path", "out_format", "image_w", "image_h", "degree_threshold", "rounds", "huenumber",
 	// Extra parameters:
-	"community_detection"
+	"community_detection", 
+	// Magnetic field parameters:
+	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 }; 
 
 // A helpful method for naming the output files
@@ -291,6 +293,14 @@ void set_default_args(map<string, string>& map)
 	map["huenumber"] = "6500";
 	// Extra parameters
 	map["community_detection"] = "SCoDA";
+	// Magnetic force parameters
+	map["use_magnetic_field"] = "false";
+	map["field_type"] = "linear";
+	map["bi_directional"] = "false";
+	map["field_strength"] = "16";
+	map["magnetic_constant"] = "1";
+	map["magnetic_alpha"] = "1";
+	map["magnetic_beta"] = "1";
 }
 
 //============================================================
@@ -625,8 +635,6 @@ int main(int argc, const char** argv)
 	fa2 = new RPGraph::CPUForceAtlas2(layout, approximate,
 		strong_gravity, gravity, scale);
 
-	fa2->setMagneticParameters("polar", false, 2, 1, 1.5, 1);
-
 // Running the CPU version of SCoDA is not supported
 /*#ifdef __NVCC__
 	if(cuda_requested)
@@ -636,6 +644,20 @@ int main(int argc, const char** argv)
 #endif
 	fa2 = new RPGraph::CPUForceAtlas2(layout, approximate,
 									  strong_gravity, gravity, scale);*/
+
+	// MAGNETIC FORCE PARAMETERS
+	bool use_magnetic_field = std::string(arg_map["use_magnetic_field"]) == "yes" or std::string(arg_map["use_magnetic_field"]) == "true";
+
+	if (use_magnetic_field) {
+		std::string field_type = arg_map["field_type"];
+		bool bi_directional = std::string(arg_map["bi_directional"]) == "true";
+		float field_strength = std::stof(arg_map["field_strength"]);
+		float magnetic_constant = std::stof(arg_map["magnetic_constant"]);
+		float magnetic_alpha = std::stof(arg_map["magnetic_alpha"]);
+		float magnetic_beta = std::stof(arg_map["magnetic_beta"]);
+
+		fa2->setMagneticParameters(field_type, bi_directional, field_strength, magnetic_constant, magnetic_alpha, magnetic_beta);
+	}
 
 	cout << "Started ForceAtlas2 layout algorithm..." << "\n";
 

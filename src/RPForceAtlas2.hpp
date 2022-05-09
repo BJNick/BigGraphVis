@@ -62,6 +62,7 @@ namespace RPGraph
             float itolsq;  // Inverse tolerance, squared
 
             // Magnetic parameters
+            bool use_magnetic_field;
             std::string field_type;
             bool bi_directional;
             float field_strength;

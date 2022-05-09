@@ -73,6 +73,7 @@ namespace RPGraph
 
     void ForceAtlas2::setMagneticParameters(std::string field_type, bool bi_directional, float field_strength, float c_m, float alpha, float beta) 
     {
+        this->use_magnetic_field = true;
         this->field_type = field_type;
         this->bi_directional = bi_directional;
         this->field_strength = field_strength;

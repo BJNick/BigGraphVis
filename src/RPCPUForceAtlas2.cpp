@@ -314,8 +314,8 @@ namespace RPGraph
             apply_gravity(n);
             apply_attract(n);
             apply_repulsion(n);
-            // TODO: Implement a toggle for this
-            apply_magnetic(n);
+            if (use_magnetic_field)
+                apply_magnetic(n);
         }
 
         updateSpeeds();
