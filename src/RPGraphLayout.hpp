@@ -39,6 +39,8 @@ namespace RPGraph
         float width, height;
         float minX(), minY(), maxX(), maxY();
 
+        float node_alpha, edge_alpha; // Additional cosmetic parameters
+
     public:
         GraphLayout(RPGraph::UGraph &graph,
                     float width = 10000, float height = 10000);
@@ -64,6 +66,8 @@ namespace RPGraph
         void writeToPNG(const int image_w, const int image_h, std::string path);
         void writeToCSV(std::string path);
         void writeToBin(std::string path);
+
+        void setAlphaParameters(float node_alpha, float edge_alpha);
     };
 }
 

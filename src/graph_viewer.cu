@@ -201,6 +201,8 @@ std::string parameter_keys[num_of_parameters] = {
 	"community_detection", 
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
+	// Node/edge alpha parameters:
+	"node_alpha", "edge_alpha",
 }; 
 
 // A helpful method for naming the output files
@@ -301,6 +303,9 @@ void set_default_args(map<string, string>& map)
 	map["magnetic_constant"] = "1";
 	map["magnetic_alpha"] = "1";
 	map["magnetic_beta"] = "1";
+	// Cosmetic parameters
+	map["node_alpha"] = "0.8";
+	map["edge_alpha"] = "0.005";
 }
 
 //============================================================
@@ -644,6 +649,9 @@ int main(int argc, const char** argv)
 #endif
 	fa2 = new RPGraph::CPUForceAtlas2(layout, approximate,
 									  strong_gravity, gravity, scale);*/
+
+	// COSMETIC PARAMETERS
+	layout.setAlphaParameters(std::stof(arg_map["node_alpha"]), std::stof(arg_map["edge_alpha"]));
 
 	// MAGNETIC FORCE PARAMETERS
 	bool use_magnetic_field = std::string(arg_map["use_magnetic_field"]) == "yes" or std::string(arg_map["use_magnetic_field"]) == "true";

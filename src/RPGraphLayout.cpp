@@ -37,6 +37,8 @@ namespace RPGraph
         : graph(graph), width(width), height(height)
     {
         coordinates = (Coordinate *)malloc(graph.num_nodes() * sizeof(Coordinate));
+        node_alpha = 0.8;
+        edge_alpha = 0.005;
     }
 
     GraphLayout::~GraphLayout()
@@ -516,7 +518,7 @@ namespace RPGraph
             //    if(graph.node_map_r[i]==748264||graph.node_map_r[i]==72606)
             layout_png.filledcircle_blend((getX(i) - minX) * xScale,
                                           (getY(i) - minY) * yScale,
-                                          std::min(threash, radian), 0.8, r, g, b);
+                                          std::min(threash, radian), node_alpha, r, g, b);
             /*layout_png.plot_text_utf8_blend(c_string, 5,
 
                                 (getX(i) - minX)*xScale, (getY(i) - minY)*yScale, 0.0, c_string2,
@@ -529,7 +531,7 @@ namespace RPGraph
                 // ... and edge.
                 layout_png.line_blend((getX(i) - minX) * xScale, (getY(i) - minY) * yScale,
                                       (getX(n2) - minX) * xScale, (getY(n2) - minY) * yScale,
-                                      0.005, r, g, b);
+                                      edge_alpha, r, g, b);
             }
 
             nid_t id = graph.node_map_r[i]; // id as found in edgelist
@@ -601,6 +603,13 @@ namespace RPGraph
         }
 
         out_file.close();
+    }
+
+    // Additional cosmetic parameters
+    void GraphLayout::setAlphaParameters(float node_alpha, float edge_alpha)
+    {
+        this->node_alpha = node_alpha;
+        this->edge_alpha = edge_alpha;
     }
 
 }
