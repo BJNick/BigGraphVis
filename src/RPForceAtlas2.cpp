@@ -57,6 +57,7 @@ namespace RPGraph
         use_magnetic_field = false;
         k_attraction = 1;
         attraction_exponent = 1;
+        pin_2_roots = false;
     }
 
     ForceAtlas2::~ForceAtlas2(){};

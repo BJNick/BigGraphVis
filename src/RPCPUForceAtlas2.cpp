@@ -112,6 +112,10 @@ namespace RPGraph
 
             Real2DVector field_direction = get_magnetic_field(center_of_mass(n, t));
 
+            // Assume the graph is directed from lower to higher node ids
+            int edge_dir = layout.graph.node_map_r[n] < layout.graph.node_map_r[t] ? 1 : -1;
+            field_direction = field_direction * edge_dir;
+
             if (dist == 0.0 || field_direction.magnitude() == 0.0)
                 continue; // Cannot compute the angle when either is zero
 
@@ -318,6 +322,20 @@ namespace RPGraph
 
     void CPUForceAtlas2::doStep(uint32_t *nodemap)
     {
+        // Context
+        // std::unordered_map<nid_t, nid_t> node_map; // el id -> UGraph id
+        // std::unordered_map<nid_t, nid_t> node_map_r; // UGraph id -> el id
+
+        if (pin_2_roots)
+        {
+            nid_t r1 = layout.graph.node_map[1];
+            nid_t r2 = layout.graph.node_map[layout.graph.num_nodes()];
+            layout.setX(r1, -5000);
+            layout.setY(r1, 0);
+            layout.setX(r2, 5000);
+            layout.setY(r2, 0);
+        }
+
         if (use_barneshut) rebuild_bh();
 
         for (nid_t n = 0; n < layout.graph.num_nodes(); ++n)
@@ -338,6 +356,16 @@ namespace RPGraph
             forces[n]       = Real2DVector(0.0f, 0.0f);
         }
         iteration++;
+
+        if (pin_2_roots)
+        {
+            nid_t r1 = layout.graph.node_map[1];
+            nid_t r2 = layout.graph.node_map[layout.graph.num_nodes()];
+            layout.setX(r1, -5000);
+            layout.setY(r1, 0);
+            layout.setX(r2, 5000);
+            layout.setY(r2, 0);
+        }
     }
 
     void CPUForceAtlas2::sync_layout() {}
