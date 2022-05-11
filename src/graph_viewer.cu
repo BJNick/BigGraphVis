@@ -204,6 +204,7 @@ std::string parameter_keys[num_of_parameters] = {
 	"community_detection", "attraction_exponent", "attraction", "random_seed", "pin_2_roots",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
+	"magnetic_pole_separation",
 	// Cosmetic parameters:
 	"node_alpha", "edge_alpha", "square_coordinates", "draw_arrows", "min_arrow_length",
 }; 
@@ -332,6 +333,7 @@ void set_default_args(map<string, string>& map)
 	map["magnetic_constant"] = "1";
 	map["magnetic_alpha"] = "1";
 	map["magnetic_beta"] = "1";
+	map["magnetic_pole_separation"] = "10000";
 	// Cosmetic parameters
 	map["node_alpha"] = "0.8";
 	map["edge_alpha"] = "0.005";
@@ -687,6 +689,7 @@ int main(int argc, const char** argv)
 	fa2->attraction_exponent = std::stof(arg_map["attraction_exponent"]);
 	fa2->k_attraction = std::stof(arg_map["attraction"]);
 	fa2->pin_2_roots = std::string(arg_map["pin_2_roots"]) == "true";
+	fa2->magetic_pole_separation = std::stof(arg_map["magnetic_pole_separation"]);
 
 	// COSMETIC PARAMETERS
 	layout.setAlphaParameters(std::stof(arg_map["node_alpha"]), std::stof(arg_map["edge_alpha"]));
