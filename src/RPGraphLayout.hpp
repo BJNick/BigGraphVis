@@ -67,6 +67,8 @@ namespace RPGraph
         void writeToCSV(std::string path);
         void writeToBin(std::string path);
 
+        // Additional cosmetic parameters
+        bool square_coordinates;
         void setAlphaParameters(float node_alpha, float edge_alpha);
     };
 }

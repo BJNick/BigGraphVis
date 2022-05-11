@@ -39,6 +39,7 @@ namespace RPGraph
         coordinates = (Coordinate *)malloc(graph.num_nodes() * sizeof(Coordinate));
         node_alpha = 0.8;
         edge_alpha = 0.005;
+        square_coordinates = false;
     }
 
     GraphLayout::~GraphLayout()
@@ -209,8 +210,11 @@ namespace RPGraph
     void GraphLayout::writeToPNG(const int image_w, const int image_h, std::string path)
     {
 
-        const float xRange = getXRange();
-        const float yRange = getYRange();
+        float xRange = getXRange();
+        float yRange = getYRange();
+        if (square_coordinates) {
+            xRange = yRange = std::max(xRange, yRange);
+        }
         const RPGraph::Coordinate center = getCenter();
         const float xCenter = center.x;
         const float yCenter = center.y;
