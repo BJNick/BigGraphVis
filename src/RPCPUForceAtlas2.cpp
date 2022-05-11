@@ -162,6 +162,9 @@ namespace RPGraph
     
     Real2DVector CPUForceAtlas2::get_magnetic_field(Real2DVector pos) 
     {
+        // TODO: Make coordinates configurable
+        Real2DVector pole1 = Real2DVector(-5000, 0); // positive (from)
+        Real2DVector pole2 = Real2DVector(5000, 0);  // negative (to)
         if (field_type == "none") {
             return Real2DVector(0, 0);
         } else if (field_type == "parallel" || field_type == "linear") {
@@ -172,6 +175,30 @@ namespace RPGraph
             return pos.getNormalizedFinite() * (-1);
         } else if (field_type == "concentric") {
             return pos.getNormalizedFinite().rotate90clockwise();
+        } else if (field_type == "dipole-1" || field_type == "dipole-2") {
+            // Dipole 1 has one the denominator with power of 1, and the other with power of 2
+            Real2DVector v1 = pos - pole1;
+            Real2DVector v2 = pole2 - pos;
+            float dist1 = v1.magnitude();
+            float dist2 = v2.magnitude();
+            if (field_type == "dipole-1") {
+                float m1 = 1 / (dist1);
+                float m2 = 1 / (dist2);
+                return (v1 * m1 + v2 * m2).getNormalizedFinite();
+            } else { // field_type == "dipole-2"
+                float m1 = 1 / (dist1 * dist1);
+                float m2 = 1 / (dist2 * dist2);
+                return (v1 * m1 + v2 * m2).getNormalizedFinite();
+            }
+        } else if (field_type == "linear-dipole") {
+            // Looks like: <-<-<- | ->->-> | <-<-<- 
+            if (pos.x < pole1.x) {
+                return Real2DVector(-1, 0);
+            } else if (pos.x < pole2.x) {
+                return Real2DVector(1, 0);
+            } else {
+                return Real2DVector(-1, 0);
+            }
         } else {
             throw std::invalid_argument("Invalid magnetic field type: " + field_type);
         }
