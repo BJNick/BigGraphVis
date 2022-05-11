@@ -41,6 +41,7 @@ namespace RPGraph
         edge_alpha = 0.005;
         square_coordinates = false;
         draw_arrows = false;
+        min_arrow_length = 50;
     }
 
     GraphLayout::~GraphLayout()
@@ -539,7 +540,7 @@ namespace RPGraph
                 if (draw_arrows) {
                     // Draw arrows if the edge is long enough
                     float distance = sqrt(pow(getX(i) - getX(n2), 2) + pow(getY(i) - getY(n2), 2))*std::min(xScale, yScale);
-                    if (distance > 50) 
+                    if (distance > min_arrow_length)
                     {
                         // Draw an arrow head halway between the nodes
                         int edge_dir = graph.node_map_r[i] < graph.node_map_r[n2] ? 1 : -1;

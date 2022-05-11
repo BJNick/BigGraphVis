@@ -70,6 +70,7 @@ namespace RPGraph
         // Additional cosmetic parameters
         bool square_coordinates;
         bool draw_arrows;
+        float min_arrow_length;
         void setAlphaParameters(float node_alpha, float edge_alpha);
     };
 }
