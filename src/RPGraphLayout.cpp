@@ -40,6 +40,7 @@ namespace RPGraph
         node_alpha = 0.8;
         edge_alpha = 0.005;
         square_coordinates = false;
+        draw_arrows = false;
     }
 
     GraphLayout::~GraphLayout()
@@ -532,10 +533,26 @@ namespace RPGraph
 
             for (nid_t n2 : graph.neighbors_with_geq_id(i))
             {
-                // ... and edge.
-                layout_png.line_blend((getX(i) - minX) * xScale, (getY(i) - minY) * yScale,
-                                      (getX(n2) - minX) * xScale, (getY(n2) - minY) * yScale,
-                                      edge_alpha, r, g, b);
+                // Draw a line from node to node
+                layout_png.line_blend((getX(i) - minX) * xScale, (getY(i) - minY) * yScale, (getX(n2) - minX) * xScale, (getY(n2) - minY) * yScale, edge_alpha, r, g, b);
+
+                if (draw_arrows) {
+                    // Draw arrows if the edge is long enough
+                    float distance = sqrt(pow(getX(i) - getX(n2), 2) + pow(getY(i) - getY(n2), 2))*std::min(xScale, yScale);
+                    if (distance > 50) 
+                    {
+                        // Draw an arrow head halway between the nodes
+                        int edge_dir = graph.node_map_r[i] < graph.node_map_r[n2] ? 1 : -1;
+
+                        float nudge = edge_dir * 7.0 / distance + 0.5;
+                        float midpoint1X = (getX(i)*nudge + getX(n2)*(1-nudge));
+                        float midpoint1Y = (getY(i)*nudge + getY(n2)*(1-nudge));
+                        float midpoint2X = (getX(i)*(1-nudge) + getX(n2)*nudge);
+                        float midpoint2Y = (getY(i)*(1-nudge) + getY(n2)*nudge);
+
+                        layout_png.filledarrow((midpoint1X - minX)*xScale, (midpoint1Y - minY)*yScale, (midpoint2X - minX)*xScale, (midpoint2Y - minY)*yScale, 15, 0.2, r, g, b);
+                    }
+                }
             }
 
             nid_t id = graph.node_map_r[i]; // id as found in edgelist

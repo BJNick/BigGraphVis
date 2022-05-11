@@ -205,7 +205,7 @@ std::string parameter_keys[num_of_parameters] = {
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	// Cosmetic parameters:
-	"node_alpha", "edge_alpha", "square_coordinates",
+	"node_alpha", "edge_alpha", "square_coordinates", "draw_arrows",
 }; 
 
 // A helpful method for naming the output files
@@ -336,6 +336,7 @@ void set_default_args(map<string, string>& map)
 	map["node_alpha"] = "0.8";
 	map["edge_alpha"] = "0.005";
 	map["square_coordinates"] = "false";
+	map["draw_arrows"] = "false";
 }
 
 //============================================================
@@ -689,6 +690,7 @@ int main(int argc, const char** argv)
 	// COSMETIC PARAMETERS
 	layout.setAlphaParameters(std::stof(arg_map["node_alpha"]), std::stof(arg_map["edge_alpha"]));
 	layout.square_coordinates = std::string(arg_map["square_coordinates"]) == "true";
+	layout.draw_arrows = std::string(arg_map["draw_arrows"]) == "true";
 
 	// MAGNETIC FORCE PARAMETERS
 	bool use_magnetic_field = std::string(arg_map["use_magnetic_field"]) == "yes" or std::string(arg_map["use_magnetic_field"]) == "true";
