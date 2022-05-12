@@ -225,15 +225,6 @@ namespace RPGraph
         const float xScale = image_w / xRange;
         const float yScale = image_h / yRange;
 
-        std::cout << "xRange: " << xRange << std::endl;
-        std::cout << "yRange: " << yRange << std::endl;
-        std::cout << "xCenter: " << xCenter << std::endl;
-        std::cout << "yCenter: " << yCenter << std::endl;
-        std::cout << "minX: " << minX << std::endl;
-        std::cout << "minY: " << minY << std::endl;
-        std::cout << "xScale: " << xScale << std::endl;
-        std::cout << "yScale: " << yScale << std::endl;
-
         // Here we need to do some guessing as to what the optimal
         // opacity of nodes and edges might be, given network size.
         float node_opacity = 0.5; // 10000.0  / graph.num_nodes();
