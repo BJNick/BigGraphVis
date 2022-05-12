@@ -63,6 +63,7 @@ namespace RPGraph
     : root_center{root_center}, root_length{root_length}, theta{theta}
     {
         this->reset(root_center, root_length);
+        repulsion_d_squared = false;
     }
 
     void BarnesHutApproximator::reset(Coordinate root_center, float root_length)
@@ -99,7 +100,7 @@ namespace RPGraph
             // length / D >= theta is the criterion to divide into subcells.
             if (cur_cell->length*cur_cell->length / D2 < theta*theta || cur_cell->num_subparticles == 0)
                 force += direction(particle_pos, cur_cell->mass_center)  *
-                (particle_mass * cur_cell->total_mass / D2);
+                (particle_mass * cur_cell->total_mass / D2) / (repulsion_d_squared ? distance(particle_pos, cur_cell->mass_center) : 1);
 
             else
                 for (int i = 0; i < 4; ++i)

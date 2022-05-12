@@ -347,6 +347,7 @@ namespace RPGraph
 
     void CPUForceAtlas2::rebuild_bh()
     {
+        BH_Approximator.repulsion_d_squared = repulsion_d_squared;
         BH_Approximator.reset(layout.getCenter(), layout.getSpan()+10);
 
         for (nid_t n = 0; n < layout.graph.num_nodes(); ++n)

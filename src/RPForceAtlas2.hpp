@@ -52,6 +52,8 @@ namespace RPGraph
             // Additional parameters
             bool pin_2_roots;
             float magetic_pole_separation;
+            
+            bool repulsion_d_squared;
 
         protected:
             int iteration;

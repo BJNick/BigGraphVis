@@ -58,6 +58,8 @@ namespace RPGraph
         void reset(Coordinate root_center, float root_length);
         void setTheta(float theta);
 
+        bool repulsion_d_squared; // if true, repulsion is calculated using 1/d^2, otherwise 1/d.
+
     private:
         BarnesHutCell *root_cell = nullptr;
         const float theta;
