@@ -751,7 +751,7 @@ int main(int argc, const char** argv)
 
 			std::string out_filepath = out_path + "/" + out_filename;
 
-			printf("Starting iteration %d (%.2f%%), writing %s...", iteration, 100 * (float)iteration / max_iterations, out_format.c_str());
+			printf("Starting iteration %3d (%3.0f%%), writing %s...", iteration, 100 * (float)iteration / max_iterations, out_format.c_str());
 			fflush(stdout);
 
 			// Make sure to synchronize the layout and retrieve it from the GPU first
@@ -769,7 +769,18 @@ int main(int argc, const char** argv)
 		// Print out the iteration progress
 		else if (iteration % print_period == 0)
 		{
-			printf("Starting iteration %d (%.2f%%).\n", iteration, 100 * (float)iteration / max_iterations);
+			printf("Starting iteration %3d (%3.0f%%),", iteration, 100 * (float)iteration / max_iterations);
+			// Print out max force during the last iteration
+			// If the exponent is larger than 5 render using scientific notation
+			if (to_string(fa2->max_force).length() > 10)
+				printf(" f = %.1e", fa2->max_force);
+			else
+				printf(" f = %4.2f", fa2->max_force);
+			// Warning about not converging
+			if (fa2->max_force >= 1e6)
+				printf(" (!)");
+			printf("\n");
+			// If the force is getting closer to 0, it converges
 		}
 	}
 

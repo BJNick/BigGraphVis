@@ -45,6 +45,7 @@ namespace RPGraph
             
             float attraction_exponent; // Additional parameter
             float k_attraction; // Additional parameter
+            float max_force; // Metric for measuring convergence
 
             void setMagneticParameters(std::string field_type, bool bi_directional, float field_strength, float c_m, float alpha, float beta);
 

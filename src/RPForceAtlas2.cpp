@@ -59,6 +59,7 @@ namespace RPGraph
         attraction_exponent = 1;
         pin_2_roots = false;
         magetic_pole_separation = 10000;
+        max_force = 0;
     }
 
     ForceAtlas2::~ForceAtlas2(){};

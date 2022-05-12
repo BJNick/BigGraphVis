@@ -374,6 +374,8 @@ namespace RPGraph
 
         if (use_barneshut) rebuild_bh();
 
+        max_force = 0.0;
+
         for (nid_t n = 0; n < layout.graph.num_nodes(); ++n)
         {
             apply_gravity(n);
@@ -381,6 +383,7 @@ namespace RPGraph
             apply_repulsion(n);
             if (use_magnetic_field)
                 apply_magnetic(n);
+            max_force = std::max(max_force, forces[n].magnitude());
         }
 
         updateSpeeds();
