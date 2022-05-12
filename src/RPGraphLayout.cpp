@@ -109,7 +109,7 @@ namespace RPGraph
 
     float GraphLayout::maxX()
     {
-        float maxX = std::numeric_limits<float>::min();
+        float maxX = std::numeric_limits<float>::lowest();
         for (nid_t n = 0; n < graph.num_nodes(); ++n)
             if (getX(n) > maxX)
                 maxX = getX(n);
@@ -127,7 +127,7 @@ namespace RPGraph
 
     float GraphLayout::maxY()
     {
-        float maxY = std::numeric_limits<float>::min();
+        float maxY = std::numeric_limits<float>::lowest();
         for (nid_t n = 0; n < graph.num_nodes(); ++n)
             if (getY(n) > maxY)
                 maxY = getY(n);
@@ -224,6 +224,15 @@ namespace RPGraph
         const float minY = yCenter - yRange / 2.0;
         const float xScale = image_w / xRange;
         const float yScale = image_h / yRange;
+
+        std::cout << "xRange: " << xRange << std::endl;
+        std::cout << "yRange: " << yRange << std::endl;
+        std::cout << "xCenter: " << xCenter << std::endl;
+        std::cout << "yCenter: " << yCenter << std::endl;
+        std::cout << "minX: " << minX << std::endl;
+        std::cout << "minY: " << minY << std::endl;
+        std::cout << "xScale: " << xScale << std::endl;
+        std::cout << "yScale: " << yScale << std::endl;
 
         // Here we need to do some guessing as to what the optimal
         // opacity of nodes and edges might be, given network size.
