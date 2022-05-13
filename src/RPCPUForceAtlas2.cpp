@@ -369,7 +369,7 @@ namespace RPGraph
             nid_t r2 = layout.graph.node_map[layout.graph.num_nodes()];
             layout.setX(r1, -magetic_pole_separation/2);
             layout.setY(r1, 0);
-            layout.setX(r2, magetic_pole_separation);
+            layout.setX(r2, magetic_pole_separation/2);
             layout.setY(r2, 0);
         }
 
