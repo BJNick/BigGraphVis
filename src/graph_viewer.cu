@@ -192,7 +192,7 @@ void find_degree_S(int num_of_edges, int num_of_nodes, uint32_t* communities, ui
 
 //============================================================
 
-const int num_of_parameters = 40; // arbitrary number
+const int num_of_parameters = 50; // arbitrary number
 
 std::string parameter_keys[num_of_parameters] = {
 	// ForceAtlas2 parameters:
@@ -202,6 +202,7 @@ std::string parameter_keys[num_of_parameters] = {
 	"config_folder", "config_chain", "chain_output_name", "chain_separator", "include_timestamp",
 	// Extra parameters:
 	"community_detection", "attraction_exponent", "attraction", "random_seed", "pin_2_roots", "repulsion_d_squared",
+	"stop_on_divergence", "divergence_factor",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	"magnetic_pole_separation",
@@ -326,6 +327,8 @@ void set_default_args(map<string, string>& map)
 	map["random_seed"] = "1234";
 	map["pin_2_roots"] = "false";
 	map["repulsion_d_squared"] = "false";
+	map["stop_on_divergence"] = "true";
+	map["divergence_factor"] = "1.5";
 	// Magnetic force parameters
 	map["use_magnetic_field"] = "false";
 	map["field_type"] = "linear";
@@ -724,67 +727,86 @@ int main(int argc, const char** argv)
 
 	for (uint32_t i = 0; i < graph.num_nodes(); i++)
 		nodemap[i] = layout.graph.node_map_r[i];
+
+	float cumulative_max_force = 0;
+	float last_avg_max_force = std::numeric_limits<float>::max();
+
+	// The procedure for saving screenshots of the layout
+	auto saveScreenshot = [&] (int iteration) {
+        // Determine output filename
+		std::string edgelist_basename = basename(in_path);
+		time_t now = time(0);
+
+		// Use a simplified output name in lexico-graphical order
+		std::string timestamp = std::to_string(now) + "_";
+
+		if (arg_map["include_timestamp"] != "true")
+			timestamp = "";
+
+		std::string out_filename = edgelist_basename + "_" + timestamp + fill_zeros(iteration, 4) + "." + out_format;	
+		// Example: "tree_edgelist.txt_123456789_0500.png"
+
+		// Or use a config chain name instead
+		if (arg_map["chain_output_name"] == "true")
+			out_filename = arg_map["config_chain"] + timestamp + fill_zeros(iteration, 4) + "." + out_format;
+		// Example: "tree m-polar 123456789_0500.png"
+
+		std::string out_filepath = out_path + "/" + out_filename;
+
+		printf("writing %s... ", out_format.c_str());
+		fflush(stdout);
+
+		// Make sure to synchronize the layout and retrieve it from the GPU first
+		fa2->sync_layout();
+
+		if (out_format == "png")
+			layout.writeToPNG(image_w, image_h, out_filepath);
+		else if (out_format == "csv")
+			layout.writeToCSV(out_filepath);
+		else if (out_format == "bin")
+			layout.writeToBin(out_filepath);
+
+		printf("done.\n");
+    };
 	
 	for (int iteration = 1; iteration <= max_iterations; iteration++)
 	{
 		// Run a CUDA kernel to compute the next step of the force layout
 		fa2->doStep(nodemap);
+		cumulative_max_force += fa2->max_force;
 
 		// If we need to, write the result to a png
-		if (num_screenshots > 0 && (iteration % snap_period == 0 || iteration == max_iterations))
+		if (num_screenshots > 0 && iteration % snap_period == 0)
 		{
-			// Determine output filename
-			std::string edgelist_basename = basename(in_path);
-			time_t now = time(0);
-
-			// Use a simplified output name in lexico-graphical order
-			std::string timestamp = std::to_string(now) + "_";
-
-			if (arg_map["include_timestamp"] != "true")
-				timestamp = "";
-
-			std::string out_filename = edgelist_basename + "_" + timestamp + fill_zeros(iteration, 4) + "." + out_format;	
-			// Example: "tree_edgelist.txt_123456789_0500.png"
-			
-			// Or use a config chain name instead
-			if (arg_map["chain_output_name"] == "true")
-				out_filename = arg_map["config_chain"] + timestamp + fill_zeros(iteration, 4) + "." + out_format;
-			// Example: "tree m-polar 123456789_0500.png"
-
-			std::string out_filepath = out_path + "/" + out_filename;
-
-			printf("Starting iteration %3d (%3.0f%%), writing %s...", iteration, 100 * (float)iteration / max_iterations, out_format.c_str());
-			fflush(stdout);
-
-			// Make sure to synchronize the layout and retrieve it from the GPU first
-			fa2->sync_layout();
-
-			if (out_format == "png")
-				layout.writeToPNG(image_w, image_h, out_filepath);
-			else if (out_format == "csv")
-				layout.writeToCSV(out_filepath);
-			else if (out_format == "bin")
-				layout.writeToBin(out_filepath);
-
-			printf("done.\n");
+			printf("Starting iteration %3d (%3.0f%%), ", iteration, 100 * (float)iteration / max_iterations);
+			saveScreenshot(iteration);
 		}
 		// Print out the iteration progress
 		else if (iteration % print_period == 0)
 		{
-			printf("Starting iteration %3d (%3.0f%%),", iteration, 100 * (float)iteration / max_iterations);
+			printf("Starting iteration %3d (%3.0f%%), ", iteration, 100 * (float)iteration / max_iterations);
 			// Print out max force during the last iteration
+			float past_avg_max_force =  cumulative_max_force / print_period;
 			// If the exponent is larger than 5 render using scientific notation
-			if (to_string(fa2->max_force).length() > 10)
-				printf(" f = %.1e", fa2->max_force);
+			if (to_string(past_avg_max_force).length() > 10)
+				printf("f = %.1e", past_avg_max_force);
 			else
-				printf(" f = %4.2f", fa2->max_force);
+				printf("f = %4.2f", past_avg_max_force);
 			// Warning about not converging
-			if (fa2->max_force >= 1e6)
+			if (past_avg_max_force >= 1e5)
 				printf(" (!)");
 			printf("\n");
 			// If the force is getting closer to 0, it converges
+			if (past_avg_max_force > last_avg_max_force * stof(arg_map["divergence_factor"]) && arg_map["stop_on_divergence"] == "true") {
+				std::cout << "DIVERGENCE DETECTED, ";
+				break;
+			}
+			last_avg_max_force = past_avg_max_force;
+			cumulative_max_force = 0;
 		}
 	}
+	
+	saveScreenshot(max_iterations);
 
 	delete fa2;
 
@@ -795,4 +817,3 @@ int main(int argc, const char** argv)
 
 	exit(EXIT_SUCCESS);
 }
-
