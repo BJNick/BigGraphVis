@@ -328,7 +328,7 @@ void set_default_args(map<string, string>& map)
 	map["pin_2_roots"] = "false";
 	map["repulsion_d_squared"] = "false";
 	map["stop_on_divergence"] = "true";
-	map["divergence_factor"] = "1.5";
+	map["divergence_factor"] = "1.75";
 	// Magnetic force parameters
 	map["use_magnetic_field"] = "false";
 	map["field_type"] = "linear";
@@ -776,7 +776,7 @@ int main(int argc, const char** argv)
 		cumulative_max_force += fa2->max_force;
 
 		// If we need to, write the result to a png
-		if (num_screenshots > 0 && iteration % snap_period == 0)
+		if (num_screenshots > 0 && (iteration % snap_period == 0 || iteration == max_iterations))
 		{
 			printf("Starting iteration %3d (%3.0f%%), ", iteration, 100 * (float)iteration / max_iterations);
 			saveScreenshot(iteration);
@@ -799,14 +799,13 @@ int main(int argc, const char** argv)
 			// If the force is getting closer to 0, it converges
 			if (past_avg_max_force > last_avg_max_force * stof(arg_map["divergence_factor"]) && arg_map["stop_on_divergence"] == "true") {
 				std::cout << "DIVERGENCE DETECTED, ";
+				saveScreenshot(iteration);
 				break;
 			}
 			last_avg_max_force = past_avg_max_force;
 			cumulative_max_force = 0;
 		}
 	}
-	
-	saveScreenshot(max_iterations);
 
 	delete fa2;
 
