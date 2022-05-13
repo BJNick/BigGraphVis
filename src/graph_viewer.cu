@@ -202,7 +202,7 @@ std::string parameter_keys[num_of_parameters] = {
 	"config_folder", "config_chain", "chain_output_name", "chain_separator", "include_timestamp",
 	// Extra parameters:
 	"community_detection", "attraction_exponent", "attraction", "random_seed", "pin_2_roots", "repulsion_d_squared",
-	"stop_on_divergence", "divergence_factor",
+	"stop_on_divergence", "divergence_factor", "divergence_threshold",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	"magnetic_pole_separation",
@@ -329,6 +329,7 @@ void set_default_args(map<string, string>& map)
 	map["repulsion_d_squared"] = "false";
 	map["stop_on_divergence"] = "true";
 	map["divergence_factor"] = "1.75";
+	map["divergence_threshold"] = "1e+8";
 	// Magnetic force parameters
 	map["use_magnetic_field"] = "false";
 	map["field_type"] = "linear";
@@ -802,6 +803,12 @@ int main(int argc, const char** argv)
 				saveScreenshot(iteration);
 				break;
 			}
+			if (past_avg_max_force > stof(arg_map["divergence_threshold"]) && iteration >= 500 && arg_map["stop_on_divergence"] == "true") {
+				std::cout << "DIVERGENCE DETECTED, ";
+				saveScreenshot(iteration);
+				break;	
+			}
+				
 			last_avg_max_force = past_avg_max_force;
 			cumulative_max_force = 0;
 		}
