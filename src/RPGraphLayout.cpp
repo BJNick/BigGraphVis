@@ -31,6 +31,10 @@
 #include <limits>
 #include <iostream>
 #include <bits/stdc++.h>
+
+#include <queue>
+#include <unordered_set>
+
 namespace RPGraph
 {
     GraphLayout::GraphLayout(UGraph &graph, float width, float height)
@@ -518,7 +522,9 @@ namespace RPGraph
             int threash = 100;
             if (r == double(177) / double(255))
                 radian = 1;
-            
+
+            getNodeColor(i, r, g, b);
+
             // Paint roots/poles red
             for (int j = 0; j < pole_list_size; j++)
                 if (i == graph.node_map[pole_list[j]])
@@ -527,6 +533,7 @@ namespace RPGraph
                     radian = radian * 3;
                     break;
                 }
+            
 
             // if(radian<=threash)//sqrt(graph.degree(i)<10))
             /*char  c_string[]= "~/OpenSans-Bold.ttf";
@@ -545,15 +552,20 @@ namespace RPGraph
             for (nid_t n2 : graph.neighbors_with_geq_id(i))
             {
                 r = 0.0; b = 0.0; g = 0.0;
-                // Paint roots/poles red
-                for (int j = 0; j < pole_list_size; j++)
-                    if (i == graph.node_map[pole_list[j]] || n2 == graph.node_map[pole_list[j]])
-                    {
-                        r = 1.0; b = 0.0; g = 0.0;
-                        radian = radian * 3;
-                        break;
-                    }
-                
+                nid_t primary_id; // The higher node id
+
+                if (graph.node_map_r[i] < graph.node_map_r[n2]) {
+                    primary_id = n2;
+                } else {
+                    primary_id = i;
+                }
+
+                getNodeColor(primary_id, r, g, b);
+
+                // Do not paint if the node is not connected to the root
+                //if (isDisconnected(primary_id, connected_to) || isConnectedToTwoPoles(primary_id, connected_to))
+                   // continue;
+
                 // Draw a line from node to node
                 layout_png.line_blend((getX(i) - minX) * xScale, (getY(i) - minY) * yScale, (getX(n2) - minX) * xScale, (getY(n2) - minY) * yScale, edge_alpha, r, g, b);
 
@@ -653,5 +665,106 @@ namespace RPGraph
         this->node_alpha = node_alpha;
         this->edge_alpha = edge_alpha;
     }
+    
+    // Contains a singleton instance of the connected sets
+    std::unordered_set<nid_t>* GraphLayout::getConnectedToList() {
+        static std::unordered_set<nid_t>* connected_to = new std::unordered_set<nid_t>[pole_list_size];
+        static bool initialized = false;
+        if (!initialized) {
+            for (int i = 0; i < pole_list_size; i++)
+            {
+                addConnectedNodes(connected_to[i], graph.node_map[pole_list[i]]);
+            }
+            initialized = true;
+        }
+        return connected_to;
+    }
+
+    // Is the given node connected to the given pole? uses connected_to to determine
+    bool GraphLayout::isConnectedTo(nid_t node, int pole)
+    {
+        std::unordered_set<nid_t>* connected_to = getConnectedToList();
+        if (pole >= pole_list_size) return false;
+        return connected_to[pole].find(node) != connected_to[pole].end();
+    }
+
+    // Is the given node completely disconnected from all poles?
+    bool GraphLayout::isDisconnected(nid_t node)
+    {
+        std::unordered_set<nid_t>* connected_to = getConnectedToList();
+        for (int i = 0; i < pole_list_size; i++)
+            if (connected_to[i].find(node) != connected_to[i].end())
+                return false;
+        return true;
+    }
+
+    // Is the given node connected to two or more poles?
+    bool GraphLayout::isConnectedToTwoPoles(nid_t node)
+    {
+        std::unordered_set<nid_t>* connected_to = getConnectedToList();
+        int count = 0;
+        for (int i = 0; i < pole_list_size; i++)
+            if (connected_to[i].find(node) != connected_to[i].end())
+                count++;
+        return count >= 2;
+    }
+
+    // Get color of a node depending on which pole it is connected to
+    void GraphLayout::getNodeColor(nid_t n, double &r, double &g, double &b)
+    { 
+        // If connected to both, set to green
+        if (isConnectedTo(n, 0) && isConnectedTo(n, 1))
+        {
+            r = 0.0; g = 0.8; b = 0.0;
+        }
+        // If connected to only 0, set to orange
+        else if (isConnectedTo(n, 0))
+        {
+            r = 1.0; g = 0.5; b = 0.0;
+        }
+        // If connected to only 1, set to blue
+        else if (isConnectedTo(n, 1))
+        {
+            r = 0.0; g = 0.0; b = 1.0;
+        }
+        // If not connected to either, set to black
+        else
+        {
+            r = 0.0; g = 0.0; b = 0.0;
+        }
+    }
+
+    // Add nodes to the set that are connected to the given node through any path
+    void GraphLayout::addConnectedNodes(std::unordered_set<nid_t> &connected_nodes, nid_t node)
+    {
+        std::queue<nid_t> q;
+        q.push(node);
+        connected_nodes.insert(node);
+
+        while (!q.empty())
+        {
+            nid_t n = q.front();
+            q.pop();
+
+            for (nid_t n1 = 0; n1 < graph.num_nodes(); ++n1)
+            {
+                for (nid_t n2 : graph.neighbors_with_geq_id(n1))
+                {
+                    // INEFFICIENT ITERATION; connects from higher to lower id
+                    if (n1 == n && connected_nodes.find(n2) == connected_nodes.end() && graph.node_map_r[n1] > graph.node_map_r[n2])
+                    {
+                        connected_nodes.insert(n2);
+                        q.push(n2);
+                    }
+                    if (n2 == n && connected_nodes.find(n1) == connected_nodes.end() && graph.node_map_r[n2] > graph.node_map_r[n1])
+                    {
+                        connected_nodes.insert(n1);
+                        q.push(n1);
+                    }
+                }
+            }
+        }
+    }
+
 
 }

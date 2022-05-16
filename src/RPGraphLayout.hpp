@@ -27,6 +27,7 @@
 #include "RPGraph.hpp"
 #include "RPCommon.hpp"
 #include <string>
+#include <unordered_set>
 
 namespace RPGraph
 {
@@ -74,6 +75,14 @@ namespace RPGraph
         void setAlphaParameters(float node_alpha, float edge_alpha);
         int* pole_list;
         int pole_list_size;
+
+        //std::unordered_set<nid_t> connected_to_poles = std::unordered_set<nid_t>();
+        std::unordered_set<nid_t>* getConnectedToList();
+        void addConnectedNodes(std::unordered_set<nid_t> &connected_nodes, nid_t node);
+        void getNodeColor(nid_t n, double &r, double &g, double &b);
+        bool isConnectedTo(nid_t node, int pole);
+        bool isDisconnected(nid_t node);
+        bool isConnectedToTwoPoles(nid_t node);
     };
 }
 
