@@ -162,9 +162,16 @@ namespace RPGraph
     
     Real2DVector CPUForceAtlas2::get_magnetic_field(Real2DVector pos) 
     {
-        // TODO: Make coordinates configurable
+        // TODO: Allow for more than 2 poles
         Real2DVector pole1 = Real2DVector(-magetic_pole_separation/2, 0); // positive (from)
         Real2DVector pole2 = Real2DVector(magetic_pole_separation/2, 0);  // negative (to)
+        if (pole_list_size >= 2) {
+            nid_t pole1_id = layout.graph.node_map[pole_list[0]];
+            nid_t pole2_id = layout.graph.node_map[pole_list[1]];
+            pole1 = layout.getCoordinate(pole1_id).toVector();
+            pole2 = layout.getCoordinate(pole2_id).toVector();
+        }
+
         if (field_type == "none") {
             return Real2DVector(0, 0);
         } else if (field_type == "parallel" || field_type == "linear") {
@@ -198,7 +205,12 @@ namespace RPGraph
             float dist2 = v2.magnitude();
             float m1 = 1 / (dist1 * dist1);
             float m2 = 1 / (dist2 * dist2);
-            return (v1 * m1 + v2 * m2).getNormalizedFinite();
+            Real2DVector total_f = (v1 * m1 + v2 * m2);
+            float total_f_mag = total_f.magnitude();
+            // TODO: Investigate purpose of this threshold
+            if (total_f_mag < 0.001) 
+                return Real2DVector(0, 0);
+            return total_f.getNormalizedFinite();
         } else if (field_type == "linear-dipole") {
             // Looks like: <-<-<- | ->->-> | <-<-<- 
             if (pos.x < pole1.x) {
@@ -367,6 +379,10 @@ namespace RPGraph
         {
             nid_t r1 = layout.graph.node_map[1];
             nid_t r2 = layout.graph.node_map[layout.graph.num_nodes()];
+            if (pole_list_size >= 2) {
+                r1 = layout.graph.node_map[pole_list[0]];
+                r2 = layout.graph.node_map[pole_list[1]];
+            }
             layout.setX(r1, -magetic_pole_separation/2);
             layout.setY(r1, 0);
             layout.setX(r2, magetic_pole_separation/2);
@@ -401,6 +417,10 @@ namespace RPGraph
         {
             nid_t r1 = layout.graph.node_map[1];
             nid_t r2 = layout.graph.node_map[layout.graph.num_nodes()];
+            if (pole_list_size >= 2) {
+                r1 = layout.graph.node_map[pole_list[0]];
+                r2 = layout.graph.node_map[pole_list[1]];
+            }
             layout.setX(r1, -magetic_pole_separation/2);
             layout.setY(r1, 0);
             layout.setX(r2, magetic_pole_separation/2);

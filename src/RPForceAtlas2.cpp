@@ -61,6 +61,8 @@ namespace RPGraph
         magetic_pole_separation = 10000;
         max_force = 0;
         repulsion_d_squared = false;
+        pole_list = {};
+        pole_list_size = 0;
     }
 
     ForceAtlas2::~ForceAtlas2(){};

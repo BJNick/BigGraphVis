@@ -205,7 +205,7 @@ std::string parameter_keys[num_of_parameters] = {
 	"stop_on_divergence", "divergence_factor", "divergence_threshold",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
-	"magnetic_pole_separation",
+	"magnetic_pole_separation", "pole_list",
 	// Cosmetic parameters:
 	"node_alpha", "edge_alpha", "square_coordinates", "draw_arrows", "min_arrow_length",
 }; 
@@ -339,12 +339,32 @@ void set_default_args(map<string, string>& map)
 	map["magnetic_alpha"] = "1";
 	map["magnetic_beta"] = "1";
 	map["magnetic_pole_separation"] = "10000";
+	map["pole_list"] = "";
 	// Cosmetic parameters
 	map["node_alpha"] = "0.8";
 	map["edge_alpha"] = "0.005";
 	map["square_coordinates"] = "false";
 	map["draw_arrows"] = "false";
 	map["min_arrow_length"] = "50";
+}
+
+// Split a string into an array of integers
+int* split_to_int(string& s, char delim, int* arr, int max_size)
+{
+	int i = 0;
+	stringstream ss(s);
+	string item;
+	while (getline(ss, item, delim) && i < max_size)
+	{
+		arr[i] = atoi(item.c_str());
+		i++;
+	}
+	while (i < max_size)
+	{
+		arr[i] = -1;
+		i++;
+	}
+	return arr;
 }
 
 //============================================================
@@ -713,6 +733,21 @@ int main(int argc, const char** argv)
 		float magnetic_constant = std::stof(arg_map["magnetic_constant"]);
 		float magnetic_alpha = std::stof(arg_map["magnetic_alpha"]);
 		float magnetic_beta = std::stof(arg_map["magnetic_beta"]);
+
+		// Convert arg_map["pole_list"] = "12,144,2" to array of ints pole_list[3] = {12, 144, 2}
+		int pole_list_size = std::count(arg_map["pole_list"].begin(), arg_map["pole_list"].end(), ',') + 1;
+		if (arg_map["pole_list"].size() == 0)
+			pole_list_size = 0;
+		int* pole_list = new int[pole_list_size];
+		split_to_int(arg_map["pole_list"], ',', pole_list, pole_list_size);
+
+		cout << "Pole list: {";
+		for (int i = 0; i < pole_list_size; i++)
+			cout << pole_list[i] << (i == pole_list_size - 1 ? "" : ",");
+		cout << "}\n";
+
+		fa2->pole_list = pole_list;
+		fa2->pole_list_size = pole_list_size;
 
 		fa2->setMagneticParameters(field_type, bi_directional, field_strength, magnetic_constant, magnetic_alpha, magnetic_beta);
 	}

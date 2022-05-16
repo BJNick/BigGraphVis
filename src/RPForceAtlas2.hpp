@@ -54,6 +54,8 @@ namespace RPGraph
             float magetic_pole_separation;
             
             bool repulsion_d_squared;
+            int* pole_list;
+            int pole_list_size;
 
         protected:
             int iteration;
