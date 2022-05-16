@@ -207,9 +207,6 @@ namespace RPGraph
             float m2 = 1 / (dist2 * dist2);
             Real2DVector total_f = (v1 * m1 + v2 * m2);
             float total_f_mag = total_f.magnitude();
-            // TODO: Investigate purpose of this threshold
-            if (total_f_mag < 0.001) 
-                return Real2DVector(0, 0);
             return total_f.getNormalizedFinite();
         } else if (field_type == "linear-dipole") {
             // Looks like: <-<-<- | ->->-> | <-<-<- 
@@ -222,6 +219,43 @@ namespace RPGraph
             }
         } else {
             throw std::invalid_argument("Invalid magnetic field type: " + field_type);
+        }
+    }
+
+    void CPUForceAtlas2::apply_electrostatic()
+    {
+        // TODO: Implement for different field types
+        if (field_type != "negative-charges" || use_magnetic_field == false) {
+            return;
+        }
+        // Iterate over pole_list of length pole_list_size
+        for (int i = 0; i < pole_list_size; i++) {
+            nid_t n = layout.graph.node_map[pole_list[i]];
+
+            for (int j = i+1; j < pole_list_size; j++) {
+                nid_t t = layout.graph.node_map[pole_list[j]];
+
+                Real2DVector f = Real2DVector(0.0, 0.0);
+                
+                float dist = layout.getDistance(n, t);
+
+                float desired_separation = magetic_pole_separation;
+                float k_el = 0.5; // Electrostatic constant
+
+                if (dist > desired_separation) {
+                    continue;
+                }
+
+                float diff =  desired_separation - dist;
+
+                //f += layout.getDistanceVector(n, t) * (-k_el / (dist));
+                f += layout.getDistanceVector(n, t) * (-k_el * (diff*diff) / (dist));
+
+                //std::cout << "n: " << n << " t: " << t << " dist: " << dist << " f: " << f.magnitude() << " k: " << (layout.getDistanceVector(n, t).magnitude()) << std::endl;
+                
+                forces[t] += f * -1;
+                forces[n] += f;
+            }
         }
     }
 
@@ -392,6 +426,8 @@ namespace RPGraph
         if (use_barneshut) rebuild_bh();
 
         max_force = 0.0;
+
+        apply_electrostatic();
 
         for (nid_t n = 0; n < layout.graph.num_nodes(); ++n)
         {

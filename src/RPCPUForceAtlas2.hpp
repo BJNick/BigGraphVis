@@ -52,6 +52,7 @@ namespace RPGraph
         void apply_attract(nid_t n);
         // New added force
         void apply_magnetic(nid_t n);
+        void apply_electrostatic();
         Real2DVector get_magnetic_field(Real2DVector pos);
         Real2DVector center_of_mass(nid_t n, nid_t t);
         Real2DVector magnetic_equation(Real2DVector m, Real2DVector d, float b, float c, float alpha, float beta);
