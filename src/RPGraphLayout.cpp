@@ -509,15 +509,25 @@ namespace RPGraph
             // The first node is the root and nodes with the same degree are also roots
 
             //std::cout << graph.degree(i) << "\n";
-            if (i == 0 || graph.degree(i) == graph.degree(0))
+            /*if (i == 0 || graph.degree(i) == graph.degree(0))
             {
                 int adj_degree = sorteddegree[0];
                 radian = ((sqrt(adj_degree + 1)) * 0.6) * 2;
-            }
+            }*/
 
             int threash = 100;
             if (r == double(177) / double(255))
                 radian = 1;
+            
+            // Paint roots/poles red
+            for (int j = 0; j < pole_list_size; j++)
+                if (i == graph.node_map[pole_list[j]])
+                {
+                    r = 1.0; b = 0.0; g = 0.0;
+                    radian = radian * 3;
+                    break;
+                }
+
             // if(radian<=threash)//sqrt(graph.degree(i)<10))
             /*char  c_string[]= "~/OpenSans-Bold.ttf";
             char c_string2[]= "7";*/
@@ -534,6 +544,16 @@ namespace RPGraph
 
             for (nid_t n2 : graph.neighbors_with_geq_id(i))
             {
+                r = 0.0; b = 0.0; g = 0.0;
+                // Paint roots/poles red
+                for (int j = 0; j < pole_list_size; j++)
+                    if (i == graph.node_map[pole_list[j]] || n2 == graph.node_map[pole_list[j]])
+                    {
+                        r = 1.0; b = 0.0; g = 0.0;
+                        radian = radian * 3;
+                        break;
+                    }
+                
                 // Draw a line from node to node
                 layout_png.line_blend((getX(i) - minX) * xScale, (getY(i) - minY) * yScale, (getX(n2) - minX) * xScale, (getY(n2) - minY) * yScale, edge_alpha, r, g, b);
 

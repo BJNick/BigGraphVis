@@ -749,6 +749,9 @@ int main(int argc, const char** argv)
 		fa2->pole_list = pole_list;
 		fa2->pole_list_size = pole_list_size;
 
+		layout.pole_list = pole_list;
+		layout.pole_list_size = pole_list_size;
+
 		fa2->setMagneticParameters(field_type, bi_directional, field_strength, magnetic_constant, magnetic_alpha, magnetic_beta);
 	}
 
