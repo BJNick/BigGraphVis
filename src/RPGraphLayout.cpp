@@ -46,6 +46,7 @@ namespace RPGraph
         square_coordinates = false;
         draw_arrows = false;
         min_arrow_length = 50;
+        draw_common_edges = true;
     }
 
     GraphLayout::~GraphLayout()
@@ -552,19 +553,12 @@ namespace RPGraph
             for (nid_t n2 : graph.neighbors_with_geq_id(i))
             {
                 r = 0.0; b = 0.0; g = 0.0;
-                nid_t primary_id; // The higher node id
 
-                if (graph.node_map_r[i] < graph.node_map_r[n2]) {
-                    primary_id = n2;
-                } else {
-                    primary_id = i;
-                }
-
-                getNodeColor(primary_id, r, g, b);
+                getNodeColor(primary(i, n2), r, g, b);
 
                 // Do not paint if the node is not connected to the root
-                //if (isDisconnected(primary_id, connected_to) || isConnectedToTwoPoles(primary_id, connected_to))
-                   // continue;
+                if (!draw_common_edges && (isDisconnected(primary(i, n2)) || isConnectedToTwoPoles(primary(i, n2))))
+                    continue;
 
                 // Draw a line from node to node
                 layout_png.line_blend((getX(i) - minX) * xScale, (getY(i) - minY) * yScale, (getX(n2) - minX) * xScale, (getY(n2) - minY) * yScale, edge_alpha, r, g, b);
@@ -680,6 +674,22 @@ namespace RPGraph
         return connected_to;
     }
 
+    nid_t GraphLayout::primary(nid_t n, nid_t t)
+    {
+        if (graph.node_map_r[n] < graph.node_map_r[t])
+            return t;
+        else
+            return n;
+    }
+
+    nid_t GraphLayout::secondary(nid_t n, nid_t t)
+    {
+        if (primary(n, t) == t)
+            return n;
+        else
+            return t;
+    }
+
     // Is the given node connected to the given pole? uses connected_to to determine
     bool GraphLayout::isConnectedTo(nid_t node, int pole)
     {
@@ -707,6 +717,17 @@ namespace RPGraph
             if (connected_to[i].find(node) != connected_to[i].end())
                 count++;
         return count >= 2;
+    }
+
+    // Is the given node connected to ONLY one pole?
+    bool GraphLayout::isConnectedToOneOnly(nid_t node)
+    {
+        std::unordered_set<nid_t>* connected_to = getConnectedToList();
+        int count = 0;
+        for (int i = 0; i < pole_list_size; i++)
+            if (connected_to[i].find(node) != connected_to[i].end())
+                count++;
+        return count == 1;
     }
 
     // Get color of a node depending on which pole it is connected to

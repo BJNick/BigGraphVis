@@ -207,7 +207,7 @@ std::string parameter_keys[num_of_parameters] = {
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	"magnetic_pole_separation", "pole_list",
 	// Cosmetic parameters:
-	"node_alpha", "edge_alpha", "square_coordinates", "draw_arrows", "min_arrow_length",
+	"node_alpha", "edge_alpha", "square_coordinates", "draw_arrows", "min_arrow_length", "draw_common_edges",
 }; 
 
 // A helpful method for naming the output files
@@ -346,6 +346,7 @@ void set_default_args(map<string, string>& map)
 	map["square_coordinates"] = "false";
 	map["draw_arrows"] = "false";
 	map["min_arrow_length"] = "50";
+	map["draw_common_edges"] = "true";
 }
 
 // Split a string into an array of integers
@@ -722,6 +723,7 @@ int main(int argc, const char** argv)
 	layout.square_coordinates = std::string(arg_map["square_coordinates"]) == "true";
 	layout.draw_arrows = std::string(arg_map["draw_arrows"]) == "true";
 	layout.min_arrow_length = std::stoi(arg_map["min_arrow_length"]);
+	layout.draw_common_edges = std::string(arg_map["draw_common_edges"]) == "true";
 
 	// MAGNETIC FORCE PARAMETERS
 	bool use_magnetic_field = std::string(arg_map["use_magnetic_field"]) == "yes" or std::string(arg_map["use_magnetic_field"]) == "true";
