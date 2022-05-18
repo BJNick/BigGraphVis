@@ -878,6 +878,7 @@ namespace RPGraph
     void GraphLayout::getClosestPole(nid_t node, int &pole, int &distance)
     {
         int min_distance = INT_MAX;
+        bool the_same_distance = false;
         for (int i = 0; i < pole_list_size; i++)
         {
             int d = getShortestDistancesList()[i][node];
@@ -885,11 +886,18 @@ namespace RPGraph
             {
                 min_distance = d;
                 pole = pole_list[i];
+                the_same_distance = false;
+            } else if (d == min_distance)
+            {
+                the_same_distance = true;
             }
         }
-        if (min_distance != INT_MAX)
+        if (the_same_distance) { 
             distance = min_distance;
-        else {
+            pole = -2;
+        } else if (min_distance != INT_MAX) {
+            distance = min_distance;
+        } else {
             distance = 0;
             pole = -1;
         }
@@ -901,6 +909,10 @@ namespace RPGraph
         int n_pole, t_pole;
         getClosestPole(n, n_pole, n_dist);
         getClosestPole(t, t_pole, t_dist);
+        if (n_pole == -2 && t_pole >= 0)
+            return 1;
+        if (t_pole == -2 && n_pole >= 0)
+            return -1;
         if (n_pole != t_pole)
             return 0;
         else if (max_influence_distance != -1 && (n_dist > max_influence_distance && t_dist > max_influence_distance))
