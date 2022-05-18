@@ -48,6 +48,7 @@ namespace RPGraph
         min_arrow_length = 50;
         draw_common_edges = true;
         use_distance_based_edge_direction = false;
+        max_influence_distance = -1; // -1 means no limit
     }
 
     GraphLayout::~GraphLayout()
@@ -901,6 +902,8 @@ namespace RPGraph
         getClosestPole(n, n_pole, n_dist);
         getClosestPole(t, t_pole, t_dist);
         if (n_pole != t_pole)
+            return 0;
+        else if (max_influence_distance != -1 && (n_dist > max_influence_distance && t_dist > max_influence_distance))
             return 0;
         else if (n_dist > t_dist)
             return 1;

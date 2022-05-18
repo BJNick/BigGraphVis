@@ -203,6 +203,7 @@ std::string parameter_keys[num_of_parameters] = {
 	// Extra parameters:
 	"community_detection", "attraction_exponent", "attraction", "random_seed", "pin_2_roots", "repulsion_d_squared",
 	"stop_on_divergence", "divergence_factor", "divergence_threshold", "use_distance_based_edge_direction",
+	"max_influence_distance",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	"magnetic_pole_separation", "pole_list", "use_pole_segmentation",
@@ -331,6 +332,7 @@ void set_default_args(map<string, string>& map)
 	map["divergence_factor"] = "1.75";
 	map["divergence_threshold"] = "1e+8";
 	map["use_distance_based_edge_direction"] = "false";
+	map["max_influence_distance"] = "-1";	
 	// Magnetic force parameters
 	map["use_magnetic_field"] = "false";
 	map["field_type"] = "linear";
@@ -749,6 +751,7 @@ int main(int argc, const char** argv)
 	layout.pole_list_size = pole_list_size;
 
 	layout.use_distance_based_edge_direction = std::string(arg_map["use_distance_based_edge_direction"]) == "true";
+	layout.max_influence_distance = std::stoi(arg_map["max_influence_distance"]);
 
 	// Print the degree of each pole in pole_list
 	cout << "Pole degrees: {";
