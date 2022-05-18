@@ -747,6 +747,12 @@ int main(int argc, const char** argv)
 	layout.pole_list = pole_list;
 	layout.pole_list_size = pole_list_size;
 
+	// Print the degree of each pole in pole_list
+	cout << "Pole degrees: {";
+	for (int i = 0; i < pole_list_size; i++)
+		cout << layout.graph.degree(layout.graph.node_map[pole_list[i]])/2 << (i == pole_list_size - 1 ? "" : ",");
+	cout << "}\n";
+
 	// MAGNETIC FORCE PARAMETERS
 	bool use_magnetic_field = std::string(arg_map["use_magnetic_field"]) == "yes" or std::string(arg_map["use_magnetic_field"]) == "true";
 
