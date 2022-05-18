@@ -63,6 +63,7 @@ namespace RPGraph
         repulsion_d_squared = false;
         pole_list = {};
         pole_list_size = 0;
+        use_pole_segmentation = false;
     }
 
     ForceAtlas2::~ForceAtlas2(){};
@@ -95,6 +96,8 @@ namespace RPGraph
 
     float ForceAtlas2::mass(nid_t n)
     {
+        //if (use_pole_segmentation && (layout.isDisconnected(n) || layout.isConnectedToTwoPoles(n)))
+        //    return 0.5 * (layout.graph.degree(n) + 1.0);
         return layout.graph.degree(n) + 1.0;
     }
 }

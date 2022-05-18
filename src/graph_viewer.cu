@@ -205,7 +205,7 @@ std::string parameter_keys[num_of_parameters] = {
 	"stop_on_divergence", "divergence_factor", "divergence_threshold",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
-	"magnetic_pole_separation", "pole_list",
+	"magnetic_pole_separation", "pole_list", "use_pole_segmentation",
 	// Cosmetic parameters:
 	"node_alpha", "edge_alpha", "square_coordinates", "draw_arrows", "min_arrow_length", "draw_common_edges",
 }; 
@@ -340,6 +340,7 @@ void set_default_args(map<string, string>& map)
 	map["magnetic_beta"] = "1";
 	map["magnetic_pole_separation"] = "10000";
 	map["pole_list"] = "";
+	map["use_pole_segmentation"] = "false";
 	// Cosmetic parameters
 	map["node_alpha"] = "0.8";
 	map["edge_alpha"] = "0.005";
@@ -717,6 +718,7 @@ int main(int argc, const char** argv)
 	fa2->pin_2_roots = std::string(arg_map["pin_2_roots"]) == "true";
 	fa2->magetic_pole_separation = std::stof(arg_map["magnetic_pole_separation"]);
 	fa2->repulsion_d_squared = std::string(arg_map["repulsion_d_squared"]) == "true";
+	fa2->use_pole_segmentation = std::string(arg_map["use_pole_segmentation"]) == "true";
 
 	// COSMETIC PARAMETERS
 	layout.setAlphaParameters(std::stof(arg_map["node_alpha"]), std::stof(arg_map["edge_alpha"]));
@@ -724,6 +726,26 @@ int main(int argc, const char** argv)
 	layout.draw_arrows = std::string(arg_map["draw_arrows"]) == "true";
 	layout.min_arrow_length = std::stoi(arg_map["min_arrow_length"]);
 	layout.draw_common_edges = std::string(arg_map["draw_common_edges"]) == "true";
+
+	// POLES FOR COLORING
+
+	// Convert arg_map["pole_list"] = "12,144,2" to array of ints pole_list[3] = {12, 144, 2}
+	int pole_list_size = std::count(arg_map["pole_list"].begin(), arg_map["pole_list"].end(), ',') + 1;
+	if (arg_map["pole_list"].size() == 0)
+		pole_list_size = 0;
+	int* pole_list = new int[pole_list_size];
+	split_to_int(arg_map["pole_list"], ',', pole_list, pole_list_size);
+
+	cout << "Pole list: {";
+	for (int i = 0; i < pole_list_size; i++)
+		cout << pole_list[i] << (i == pole_list_size - 1 ? "" : ",");
+	cout << "}\n";
+
+	fa2->pole_list = pole_list;
+	fa2->pole_list_size = pole_list_size;
+
+	layout.pole_list = pole_list;
+	layout.pole_list_size = pole_list_size;
 
 	// MAGNETIC FORCE PARAMETERS
 	bool use_magnetic_field = std::string(arg_map["use_magnetic_field"]) == "yes" or std::string(arg_map["use_magnetic_field"]) == "true";
@@ -735,24 +757,6 @@ int main(int argc, const char** argv)
 		float magnetic_constant = std::stof(arg_map["magnetic_constant"]);
 		float magnetic_alpha = std::stof(arg_map["magnetic_alpha"]);
 		float magnetic_beta = std::stof(arg_map["magnetic_beta"]);
-
-		// Convert arg_map["pole_list"] = "12,144,2" to array of ints pole_list[3] = {12, 144, 2}
-		int pole_list_size = std::count(arg_map["pole_list"].begin(), arg_map["pole_list"].end(), ',') + 1;
-		if (arg_map["pole_list"].size() == 0)
-			pole_list_size = 0;
-		int* pole_list = new int[pole_list_size];
-		split_to_int(arg_map["pole_list"], ',', pole_list, pole_list_size);
-
-		cout << "Pole list: {";
-		for (int i = 0; i < pole_list_size; i++)
-			cout << pole_list[i] << (i == pole_list_size - 1 ? "" : ",");
-		cout << "}\n";
-
-		fa2->pole_list = pole_list;
-		fa2->pole_list_size = pole_list_size;
-
-		layout.pole_list = pole_list;
-		layout.pole_list_size = pole_list_size;
 
 		fa2->setMagneticParameters(field_type, bi_directional, field_strength, magnetic_constant, magnetic_alpha, magnetic_beta);
 	}

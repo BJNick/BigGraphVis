@@ -85,6 +85,9 @@ namespace RPGraph
 
             f_a_over_d *= exp_factor;
 
+            if (use_pole_segmentation && layout.isConnectedToOneOnly(layout.primary(n, t)))
+                f_a_over_d *= 2.0; 
+
             f += layout.getDistanceVector(n, t) * f_a_over_d;
 
             //TODO: this is temporary, but required due to
@@ -110,7 +113,7 @@ namespace RPGraph
             Real2DVector disp = layout.getDistanceVector(n, t);
             float dist = std::sqrt(disp.magnitude());
 
-            Real2DVector field_direction = get_magnetic_field(center_of_mass(n, t));
+            Real2DVector field_direction = get_magnetic_field(center_of_mass(n, t), layout.primary(t, n));
 
             // Assume the graph is directed from lower to higher node ids
             int edge_dir = layout.graph.node_map_r[n] < layout.graph.node_map_r[t] ? 1 : -1;
@@ -119,9 +122,15 @@ namespace RPGraph
             if (dist == 0.0 || field_direction.magnitude() == 0.0)
                 continue; // Cannot compute the angle when either is zero
 
+            if (use_pole_segmentation && layout.isDisconnected(layout.primary(t, n)))
+                field_direction = field_direction * -1; // Either skip or reverse the direction
+
             Real2DVector force_on_n = magnetic_equation(field_direction, disp, field_strength, c_m, alpha, beta);
             
             Real2DVector force_on_t = force_on_n * -1;
+
+            //if (field_type == "negative-charges" && layout.isConnectedToOneOnly(layout.primary(t, n)))
+            //    force_on_t = force_on_t * 4; 
 
             Real2DVector accel_on_n = force_on_n / mass(n);
             Real2DVector accel_on_t = force_on_t / mass(t);
@@ -160,7 +169,7 @@ namespace RPGraph
         return force_on_n;
     }
     
-    Real2DVector CPUForceAtlas2::get_magnetic_field(Real2DVector pos) 
+    Real2DVector CPUForceAtlas2::get_magnetic_field(Real2DVector pos, nid_t primary_node) 
     {
         // TODO: Allow for more than 2 poles
         Real2DVector pole1 = Real2DVector(-magetic_pole_separation/2, 0); // positive (from)
@@ -205,6 +214,13 @@ namespace RPGraph
             float dist2 = v2.magnitude();
             float m1 = 1 / (dist1 * dist1);
             float m2 = 1 / (dist2 * dist2);
+            if (use_pole_segmentation && layout.isConnectedToOneOnly(primary_node)) {
+                if (layout.isConnectedTo(primary_node, 0)) {
+                    return (v1 * m1).getNormalizedFinite();
+                } else if (layout.isConnectedTo(primary_node, 1)) {
+                    return (v2 * m2).getNormalizedFinite();
+                }
+            }
             Real2DVector total_f = (v1 * m1 + v2 * m2);
             float total_f_mag = total_f.magnitude();
             return total_f.getNormalizedFinite();
@@ -265,7 +281,8 @@ namespace RPGraph
     {
         if (use_barneshut)
         {
-            forces[n] += (BH_Approximator.approximateForce(layout.getCoordinate(n), mass(n), theta) * k_r);
+            Real2DVector f = (BH_Approximator.approximateForce(layout.getCoordinate(n), mass(n), theta) * k_r);
+            forces[n] += f;
         }
 
         else
