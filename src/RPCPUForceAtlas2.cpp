@@ -21,6 +21,8 @@
  ==============================================================================
 */
 
+#define _USE_MATH_DEFINES
+
 #include "RPCPUForceAtlas2.hpp"
 #include <stdlib.h>
 #include <math.h>
@@ -419,14 +421,9 @@ namespace RPGraph
         }
     }
 
-    void CPUForceAtlas2::doStep(uint32_t *nodemap)
+    void CPUForceAtlas2::pinRoots() 
     {
-        // Context
-        // std::unordered_map<nid_t, nid_t> node_map; // el id -> UGraph id
-        // std::unordered_map<nid_t, nid_t> node_map_r; // UGraph id -> el id
-
-        if (pin_2_roots)
-        {
+        if (pin_2_roots) {
             nid_t r1 = layout.graph.node_map[1];
             nid_t r2 = layout.graph.node_map[layout.graph.num_nodes()];
             if (pole_list_size >= 2) {
@@ -437,7 +434,19 @@ namespace RPGraph
             layout.setY(r1, 0);
             layout.setX(r2, magetic_pole_separation/2);
             layout.setY(r2, 0);
+        } else if (pin_poles && pole_list_size >= 2) {
+            float radius = magetic_pole_separation / (2*sin(M_PI/pole_list_size));
+            for (int i = 0; i < pole_list_size; i++) {
+                nid_t n = layout.graph.node_map[pole_list[i]];
+                layout.setX(n, cos(2*M_PI*i/pole_list_size)*radius);
+                layout.setY(n, sin(2*M_PI*i/pole_list_size)*radius);
+            }
         }
+    }
+
+    void CPUForceAtlas2::doStep(uint32_t *nodemap)
+    {
+        pinRoots();
 
         if (use_barneshut) rebuild_bh();
 
@@ -465,19 +474,7 @@ namespace RPGraph
         }
         iteration++;
 
-        if (pin_2_roots)
-        {
-            nid_t r1 = layout.graph.node_map[1];
-            nid_t r2 = layout.graph.node_map[layout.graph.num_nodes()];
-            if (pole_list_size >= 2) {
-                r1 = layout.graph.node_map[pole_list[0]];
-                r2 = layout.graph.node_map[pole_list[1]];
-            }
-            layout.setX(r1, -magetic_pole_separation/2);
-            layout.setY(r1, 0);
-            layout.setX(r2, magetic_pole_separation/2);
-            layout.setY(r2, 0);
-        }
+        pinRoots();
     }
 
     void CPUForceAtlas2::sync_layout() {}

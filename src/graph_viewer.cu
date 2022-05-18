@@ -203,7 +203,7 @@ std::string parameter_keys[num_of_parameters] = {
 	// Extra parameters:
 	"community_detection", "attraction_exponent", "attraction", "random_seed", "pin_2_roots", "repulsion_d_squared",
 	"stop_on_divergence", "divergence_factor", "divergence_threshold", "use_distance_based_edge_direction",
-	"max_influence_distance",
+	"max_influence_distance", "pin_poles",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	"magnetic_pole_separation", "pole_list", "use_pole_segmentation",
@@ -333,6 +333,7 @@ void set_default_args(map<string, string>& map)
 	map["divergence_threshold"] = "1e+8";
 	map["use_distance_based_edge_direction"] = "false";
 	map["max_influence_distance"] = "-1";	
+	map["pin_poles"] = "false";
 	// Magnetic force parameters
 	map["use_magnetic_field"] = "false";
 	map["field_type"] = "linear";
@@ -722,6 +723,7 @@ int main(int argc, const char** argv)
 	fa2->magetic_pole_separation = std::stof(arg_map["magnetic_pole_separation"]);
 	fa2->repulsion_d_squared = std::string(arg_map["repulsion_d_squared"]) == "true";
 	fa2->use_pole_segmentation = std::string(arg_map["use_pole_segmentation"]) == "true";
+	fa2->pin_poles = std::string(arg_map["pin_poles"]) == "true";
 
 	// COSMETIC PARAMETERS
 	layout.setAlphaParameters(std::stof(arg_map["node_alpha"]), std::stof(arg_map["edge_alpha"]));

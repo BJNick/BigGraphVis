@@ -57,6 +57,7 @@ namespace RPGraph
             bool repulsion_d_squared;
             int* pole_list;
             int pole_list_size;
+            bool pin_poles;
 
         protected:
             int iteration;

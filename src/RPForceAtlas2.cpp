@@ -64,6 +64,7 @@ namespace RPGraph
         pole_list = {};
         pole_list_size = 0;
         use_pole_segmentation = false;
+        pin_poles = false;
     }
 
     ForceAtlas2::~ForceAtlas2(){};
