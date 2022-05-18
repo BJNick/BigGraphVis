@@ -85,8 +85,8 @@ namespace RPGraph
 
             f_a_over_d *= exp_factor;
 
-            if (use_pole_segmentation && layout.isConnectedToOneOnly(layout.primary(n, t)))
-                f_a_over_d *= 2.0; 
+            //if (use_pole_segmentation && layout.isConnectedToOneOnly(layout.primary(n, t)))
+            //    f_a_over_d *= 2.0; 
 
             f += layout.getDistanceVector(n, t) * f_a_over_d;
 
