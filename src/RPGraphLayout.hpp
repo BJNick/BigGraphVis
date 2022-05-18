@@ -77,16 +77,27 @@ namespace RPGraph
         int pole_list_size;
         bool draw_common_edges;
 
+        bool use_distance_based_edge_direction;
+
         //std::unordered_set<nid_t> connected_to_poles = std::unordered_set<nid_t>();
         std::unordered_set<nid_t>* getConnectedToList();
+
         nid_t primary(nid_t n, nid_t t);
         nid_t secondary(nid_t n, nid_t t);
+        int getEdgeDirection(nid_t n, nid_t t);
+
         void addConnectedNodes(std::unordered_set<nid_t> &connected_nodes, nid_t node);
         void getNodeColor(nid_t n, double &r, double &g, double &b);
         bool isConnectedTo(nid_t node, int pole);
         bool isDisconnected(nid_t node);
         bool isConnectedToTwoPoles(nid_t node);
         bool isConnectedToOneOnly(nid_t node);
+        bool sameColor(nid_t n1, nid_t n2);
+
+        void getShortestDistances(nid_t node, std::vector<int> &distances);
+        std::vector<int>* getShortestDistancesList();
+        void getClosestPole(nid_t node, int &pole, int &distance);
+        int getDistanceBasedEdgeDirection(nid_t node, nid_t t);
     };
 }
 

@@ -47,6 +47,7 @@ namespace RPGraph
         draw_arrows = false;
         min_arrow_length = 50;
         draw_common_edges = true;
+        use_distance_based_edge_direction = false;
     }
 
     GraphLayout::~GraphLayout()
@@ -552,9 +553,12 @@ namespace RPGraph
 
             for (nid_t n2 : graph.neighbors_with_geq_id(i))
             {
-                r = 0.0; b = 0.0; g = 0.0;
+                r = 0.0; g = 0.0; b = 0.0; 
 
                 getNodeColor(primary(i, n2), r, g, b);
+
+                if (getEdgeDirection(i, n2) == 0 && !sameColor(i, n2))
+                    r = 0.5, g = 0.5, b = 0.5;
 
                 // Do not paint if the node is not connected to the root
                 if (!draw_common_edges && (isDisconnected(primary(i, n2)) || isConnectedToTwoPoles(primary(i, n2))))
@@ -569,7 +573,8 @@ namespace RPGraph
                     if (distance > min_arrow_length)
                     {
                         // Draw an arrow head halway between the nodes
-                        int edge_dir = graph.node_map_r[i] < graph.node_map_r[n2] ? 1 : -1;
+                        int edge_dir = getEdgeDirection(i, n2);
+                        if (edge_dir == 0) continue;
 
                         float nudge = edge_dir * 7.0 / distance + 0.5;
                         float midpoint1X = (getX(i)*nudge + getX(n2)*(1-nudge));
@@ -676,7 +681,7 @@ namespace RPGraph
 
     nid_t GraphLayout::primary(nid_t n, nid_t t)
     {
-        if (graph.node_map_r[n] < graph.node_map_r[t])
+        if (getEdgeDirection(n, t) >= 0)
             return t;
         else
             return n;
@@ -688,6 +693,16 @@ namespace RPGraph
             return n;
         else
             return t;
+    }
+
+    int GraphLayout::getEdgeDirection(nid_t n, nid_t t)
+    {
+        if (use_distance_based_edge_direction)
+            return getDistanceBasedEdgeDirection(n, t);
+        if (graph.node_map_r[n] < graph.node_map_r[t])
+            return 1;
+        else
+            return -1;
     }
 
     // Is the given node connected to the given pole? uses connected_to to determine
@@ -783,12 +798,12 @@ namespace RPGraph
                 for (nid_t n2 : graph.neighbors_with_geq_id(n1))
                 {
                     // INEFFICIENT ITERATION; connects from higher to lower id
-                    if (n1 == n && connected_nodes.find(n2) == connected_nodes.end() && graph.node_map_r[n1] > graph.node_map_r[n2])
+                    if (n1 == n && connected_nodes.find(n2) == connected_nodes.end() && getEdgeDirection(n1, n2) < 0)
                     {
                         connected_nodes.insert(n2);
                         q.push(n2);
                     }
-                    if (n2 == n && connected_nodes.find(n1) == connected_nodes.end() && graph.node_map_r[n2] > graph.node_map_r[n1])
+                    if (n2 == n && connected_nodes.find(n1) == connected_nodes.end() && getEdgeDirection(n1, n2) > 0)
                     {
                         connected_nodes.insert(n1);
                         q.push(n1);
@@ -796,6 +811,103 @@ namespace RPGraph
                 }
             }
         }
+    }
+
+    bool GraphLayout::sameColor(nid_t n1, nid_t n2)
+    {
+        double r1, g1, b1;
+        double r2, g2, b2;
+        getNodeColor(n1, r1, g1, b1);
+        getNodeColor(n2, r2, g2, b2);
+        return r1 == r2 && g1 == g2 && b1 == b2;
+    }
+
+    // Performs BFS to get a list of shortest distances from the given node to all other nodes
+    void GraphLayout::getShortestDistances(nid_t node, std::vector<int> &distances)
+    {
+        std::queue<nid_t> q;
+        std::unordered_set<nid_t> visited;
+        q.push(node);
+        visited.insert(node);
+        distances.resize(graph.num_nodes());
+        distances[node] = 0;
+
+        while (!q.empty())
+        {
+            nid_t n = q.front();
+            q.pop();
+
+            for (nid_t n1 = 0; n1 < graph.num_nodes(); ++n1)
+            {
+                for (nid_t n2 : graph.neighbors_with_geq_id(n1))
+                {
+                    // INEFFICIENT ITERATION
+                    if (n1 == n && visited.find(n2) == visited.end())
+                    {
+                        visited.insert(n2);
+                        q.push(n2);
+                        distances[n2] = distances[n] + 1;
+                    }
+                    if (n2 == n && visited.find(n1) == visited.end())
+                    {
+                        visited.insert(n1);
+                        q.push(n1);
+                        distances[n1] = distances[n] + 1;
+                    }
+                }
+            }
+        }
+    }
+
+    // Contains a singleton instance of the shortest distances
+    std::vector<int>* GraphLayout::getShortestDistancesList() {
+        static std::vector<int>* distances = new std::vector<int>[pole_list_size];
+        static bool initialized = false;
+        if (!initialized) {
+            for (int i = 0; i < pole_list_size; i++)
+            {
+                getShortestDistances(graph.node_map[pole_list[i]], distances[i]);
+            }
+            initialized = true;
+        }
+        return distances;
+    }
+
+    // Returns the closest pole to the given node and the distance to it
+    void GraphLayout::getClosestPole(nid_t node, int &pole, int &distance)
+    {
+        int min_distance = INT_MAX;
+        for (int i = 0; i < pole_list_size; i++)
+        {
+            int d = getShortestDistancesList()[i][node];
+            if (d < min_distance)
+            {
+                min_distance = d;
+                pole = pole_list[i];
+            }
+        }
+        if (min_distance != INT_MAX)
+            distance = min_distance;
+        else {
+            distance = 0;
+            pole = -1;
+        }
+    }
+
+    int GraphLayout::getDistanceBasedEdgeDirection(nid_t n, nid_t t)
+    {
+        int n_dist, t_dist;
+        int n_pole, t_pole;
+        getClosestPole(n, n_pole, n_dist);
+        getClosestPole(t, t_pole, t_dist);
+        if (n_pole != t_pole)
+            return 0;
+        else if (n_dist > t_dist)
+            return 1;
+        else if (n_dist == t_dist)
+            return 0;
+        else
+            return -1;
     }
 
 

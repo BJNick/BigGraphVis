@@ -116,7 +116,7 @@ namespace RPGraph
             Real2DVector field_direction = get_magnetic_field(center_of_mass(n, t), layout.primary(t, n));
 
             // Assume the graph is directed from lower to higher node ids
-            int edge_dir = layout.graph.node_map_r[n] < layout.graph.node_map_r[t] ? 1 : -1;
+            int edge_dir = layout.getEdgeDirection(n, t);
             field_direction = field_direction * edge_dir;
 
             if (dist == 0.0 || field_direction.magnitude() == 0.0)
