@@ -530,7 +530,7 @@ namespace RPGraph
             for (int j = 0; j < pole_list_size; j++)
                 if (i == graph.node_map[pole_list[j]])
                 {
-                    r = 1.0; b = 0.0; g = 0.0;
+                    r = 1.0, g = 0.0, b = 0.0; 
                     radian = radian * 3;
                     break;
                 }
@@ -733,26 +733,37 @@ namespace RPGraph
     // Get color of a node depending on which pole it is connected to
     void GraphLayout::getNodeColor(nid_t n, double &r, double &g, double &b)
     { 
-        // If connected to both, set to green
-        if (isConnectedTo(n, 0) && isConnectedTo(n, 1))
-        {
-            r = 0.0; g = 0.8; b = 0.0;
-        }
-        // If connected to only 0, set to orange
+        if (pole_list_size == 0)
+            r = 0.0, g = 0.0, b = 0.0;
+        // If connected to multiple, set to gray
+        else if (isConnectedToTwoPoles(n)) 
+            r = 0.5, g = 0.5, b = 0.5;
+        // If connected to a particular one, set to one from a pallette
         else if (isConnectedTo(n, 0))
-        {
-            r = 1.0; g = 0.5; b = 0.0;
-        }
-        // If connected to only 1, set to blue
+            r = 1.0, g = 0.5, b = 0.0; // orange
         else if (isConnectedTo(n, 1))
-        {
-            r = 0.0; g = 0.0; b = 1.0;
-        }
+            r = 0.0, g = 0.65, b = 0.93; // blue
+        else if (isConnectedTo(n, 2))
+            r = 0.85, g = 0.39, b = 0.6; // pink
+        else if (isConnectedTo(n, 3))
+            r = 0.5, g = 0.72, b = 0;  // green
+        else if (isConnectedTo(n, 4))
+            r = 0.2, g = 0, b = 0.60;  // purple
+        else if (isConnectedTo(n, 5))
+            r = 0.53, g = 0.36, b = 0.0; // dark orange
+        else if (isConnectedTo(n, 6))
+            r = 0, g = 0.28, b = 0.53; // dark blue
+        else if (isConnectedTo(n, 7))
+            r = 0.53, g = 0, b = 0.16; // dark pink
+        else if (isConnectedTo(n, 8))
+            r = 0, g = 0.53, b = 0.09;  // dark green
+        else if (isConnectedTo(n, 9))
+            r = 0.5, g = 0, b = 0.53;  // dark purple
+        else if (isConnectedToOneOnly(n))
+            r = 1.0, g = 0.0, b = 0.0; // red for all other nodes
         // If not connected to either, set to black
         else
-        {
-            r = 0.0; g = 0.0; b = 0.0;
-        }
+            r = 0.0, g = 0.0, b = 0.0;
     }
 
     // Add nodes to the set that are connected to the given node through any path

@@ -207,22 +207,21 @@ namespace RPGraph
                 return (v1 * m1 + v2 * m2).getNormalizedFinite();
             }
         } else if (field_type == "negative-charges") {
-            // Two negative charges at the dipole positions
-            Real2DVector v1 = pole1 - pos; // Reversed from dipole
-            Real2DVector v2 = pole2 - pos;
-            float dist1 = v1.magnitude();
-            float dist2 = v2.magnitude();
-            float m1 = 1 / (dist1 * dist1);
-            float m2 = 1 / (dist2 * dist2);
-            if (use_pole_segmentation && layout.isConnectedToOneOnly(primary_node)) {
-                if (layout.isConnectedTo(primary_node, 0)) {
-                    return (v1 * m1).getNormalizedFinite();
-                } else if (layout.isConnectedTo(primary_node, 1)) {
-                    return (v2 * m2).getNormalizedFinite();
+            // Multiple negative charges
+            Real2DVector total_f = Real2DVector(0, 0);
+            for (int i = 0; i < pole_list_size; i++) {
+                nid_t pole_id = layout.graph.node_map[pole_list[i]];
+                Real2DVector pole_pos = layout.getCoordinate(pole_id).toVector();
+                Real2DVector v = pole_pos - pos;
+                float dist = v.magnitude();
+                float m = 1 / (dist * dist);
+                if (use_pole_segmentation && layout.isConnectedToOneOnly(primary_node)) {
+                    if (layout.isConnectedTo(primary_node, i)) {
+                        return (v * m).getNormalizedFinite();
+                    }
                 }
+                total_f += v * m;
             }
-            Real2DVector total_f = (v1 * m1 + v2 * m2);
-            float total_f_mag = total_f.magnitude();
             return total_f.getNormalizedFinite();
         } else if (field_type == "linear-dipole") {
             // Looks like: <-<-<- | ->->-> | <-<-<- 
