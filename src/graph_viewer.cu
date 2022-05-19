@@ -824,6 +824,8 @@ int main(int argc, const char** argv)
 			layout.writeToCSV(out_filepath);
 		else if (out_format == "bin")
 			layout.writeToBin(out_filepath);
+		else if (out_format == "net")
+			layout.writeToNET(out_filepath);
 
 		printf("done.\n");
     };

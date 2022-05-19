@@ -635,6 +635,58 @@ namespace RPGraph
         out_file.close();
     }
 
+    void GraphLayout::writeToNET(std::string path)
+    {
+        if (is_file_exists(path.c_str()))
+        {
+            printf("Error: File exists at %s\n", path.c_str());
+            exit(EXIT_FAILURE);
+        }
+
+        std::ofstream out_file(path);
+
+        // First output the nodes
+
+        out_file << "*Vertices " << graph.num_nodes() << "\n";
+
+        for (nid_t n = 0; n < graph.num_nodes(); ++n)
+        {
+            nid_t id = graph.node_map_r[n]; // id as found in edgelist
+            std::string label = "LABEL";
+            out_file << id << " " << label << " " << getX(n) << " " << getY(n) << "\n";
+        }
+
+        // Now output the arcs (directed)
+
+        out_file << "*Arcs\n";
+
+        for (nid_t n = 0; n < graph.num_nodes(); ++n)
+        {
+            for (nid_t n2 : graph.neighbors_with_geq_id(n))
+            {
+                if (getEdgeDirection(n, n2) > 0)
+                    out_file << graph.node_map_r[n] << " " << graph.node_map_r[n2] << " " << "\n";
+                else if (getEdgeDirection(n, n2) < 0)
+                    out_file << graph.node_map_r[n2] << " " << graph.node_map_r[n] << " " << "\n";
+            }
+        }
+
+        // Finally output the edges (undirected)
+
+        out_file << "*Edges\n";
+
+        for (nid_t n = 0; n < graph.num_nodes(); ++n)
+        {
+            for (nid_t n2 : graph.neighbors_with_geq_id(n))
+            {
+                if (getEdgeDirection(n, n2) == 0)
+                    out_file << graph.node_map_r[n] << " " << graph.node_map_r[n2] << " " << "\n";
+            }
+        }
+        
+        out_file.close();
+    }
+
     void GraphLayout::writeToBin(std::string path)
     {
         if (is_file_exists(path.c_str()))
