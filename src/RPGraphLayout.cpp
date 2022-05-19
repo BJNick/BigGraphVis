@@ -909,13 +909,13 @@ namespace RPGraph
         int n_pole, t_pole;
         getClosestPole(n, n_pole, n_dist);
         getClosestPole(t, t_pole, t_dist);
+        if (max_influence_distance != -1 && (n_dist > max_influence_distance || t_dist > max_influence_distance))
+            return 0;
         if (n_pole == -2 && t_pole >= 0)
             return 1;
         if (t_pole == -2 && n_pole >= 0)
             return -1;
         if (n_pole != t_pole)
-            return 0;
-        else if (max_influence_distance != -1 && (n_dist > max_influence_distance && t_dist > max_influence_distance))
             return 0;
         else if (n_dist > t_dist)
             return 1;
