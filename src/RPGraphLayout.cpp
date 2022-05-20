@@ -526,7 +526,8 @@ namespace RPGraph
             if (r == double(177) / double(255))
                 radian = 1;
 
-            getNodeColor(i, r, g, b);
+            if (pole_list_size > 0)
+                getNodeColor(i, r, g, b);
 
             // Paint roots/poles red
             for (int j = 0; j < pole_list_size; j++)
@@ -554,11 +555,10 @@ namespace RPGraph
 
             for (nid_t n2 : graph.neighbors_with_geq_id(i))
             {
-                r = 0.0; g = 0.0; b = 0.0; 
+                if (pole_list_size > 0)
+                    getNodeColor(primary(i, n2), r, g, b);
 
-                getNodeColor(primary(i, n2), r, g, b);
-
-                if (getEdgeDirection(i, n2) == 0 && !sameColor(i, n2))
+                if (pole_list_size > 0 && getEdgeDirection(i, n2) == 0 && !sameColor(i, n2))
                     r = 0.5, g = 0.5, b = 0.5;
 
                 // Do not paint if the node is not connected to the root
