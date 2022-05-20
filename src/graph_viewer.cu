@@ -473,59 +473,94 @@ int main(int argc, const char** argv)
 	cout << "Number of edges: " << num_of_edges << '\n';
 	inFile.close();
 
-	// Sets the CUDA computing device
-	int device_count;
-	cudaGetDeviceCount(&device_count);
+	const bool cuda_requested = std::string(arg_map["cuda_requested"]) == "gpu" or std::string(arg_map["cuda_requested"]) == "cuda";
 
-	if (device_count == 0) 
-	{
-		fprintf(stderr, "No CUDA-capable devices found.\n");
-		exit(EXIT_FAILURE);
+	if (cuda_requested) {
+
+		// Sets the CUDA computing device
+		int device_count;
+		cudaGetDeviceCount(&device_count);
+
+		if (device_count == 0) 
+		{
+			fprintf(stderr, "No CUDA-capable devices found.\n");
+			exit(EXIT_FAILURE);
+		} else {
+			cout << device_count << " CUDA-capable devices found" << '\n';
+		}
+
+		// Just use the first one found
+		cudaSetDevice(0);
+
+		cout << "Allocating CUDA memory" << '\n';
+
+		// Allocate GPU memory
+		cudaMallocManaged(&src, num_of_edges * sizeof(uint32_t));
+		cudaMallocManaged(&dst, num_of_edges * sizeof(uint32_t));
+		cudaMallocManaged(&Degree_done, num_of_edges * sizeof(int));
+		cudaMallocManaged(&degree, num_of_nodes * sizeof(uint32_t));
+		cudaMallocManaged(&degree_cmt, num_of_nodes * sizeof(uint32_t));
+		cudaMallocManaged(&degree_S, num_of_nodes * sizeof(uint32_t));
+		cudaMallocManaged(&weight_S, num_of_edges * sizeof(int));
+
+		cudaMallocManaged(&communities, num_of_nodes * sizeof(uint32_t));
+		cudaMallocManaged(&h1, num_of_nodes * sizeof(int));
+		cudaMallocManaged(&h2, num_of_nodes * sizeof(int));
+		cudaMallocManaged(&h3, num_of_edges * sizeof(int));
+		cudaMallocManaged(&h4, num_of_edges * sizeof(int));
+		cudaMallocManaged(&sketch, huenumber * sizeof(int));
+
+		cudaMallocManaged((void**)&states, num_of_edges * sizeof(curandState_t));
+		
+		// Compute the number of CUDA blocks based on total NODES
+		int blockSize = 256;
+		int remain = num_of_nodes % blockSize;
+		int numBlocks = num_of_nodes / blockSize + (remain > 0 ? 1 : 0);
+
+		// Run kernel on the GPU that sets the initial values for the thread variables
+		initial<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, communities, degree, degree_cmt, degree_S, huenumber, sketch);
+
+		cudaDeviceSynchronize();
+
+		cudaError_t error = cudaGetLastError();
+		if (error != cudaSuccess)
+		{
+			printf("CUDA error in initialization: %s\n", cudaGetErrorString(error));
+			exit(-1);
+		}
+
+		cout << "CUDA initialization complete" << '\n';
+
 	} else {
-		cout << device_count << " CUDA-capable devices found" << '\n';
+
+		// Allocate CPU memory for the arrays
+		src = (uint32_t*)malloc(num_of_edges * sizeof(uint32_t));
+		dst = (uint32_t*)malloc(num_of_edges * sizeof(uint32_t));
+		Degree_done = (int*)malloc(num_of_edges * sizeof(int));
+		degree = (uint32_t*)malloc(num_of_nodes * sizeof(uint32_t));
+		degree_cmt = (uint32_t*)malloc(num_of_nodes * sizeof(uint32_t));
+		degree_S = (uint32_t*)malloc(num_of_nodes * sizeof(uint32_t));
+		weight_S = (int*)malloc(num_of_edges * sizeof(int));
+
+		// For SCoDA detection
+		communities = (uint32_t*)malloc(num_of_nodes * sizeof(uint32_t));
+		h1 = (int*)malloc(num_of_nodes * sizeof(int));
+		h2 = (int*)malloc(num_of_nodes * sizeof(int));
+		h3 = (int*)malloc(num_of_edges * sizeof(int));
+		h4 = (int*)malloc(num_of_edges * sizeof(int));
+		sketch = (int*)malloc(huenumber * sizeof(int));
+		states = (curandState_t*)malloc(num_of_edges * sizeof(curandState_t));
+
+		// Set default values for each node in the graph
+		for (int i = 0; i < num_of_nodes; i++) {
+			communities[i] = i;
+			degree[i] = 0;
+			degree_S[i] = 1;
+			degree_cmt[i] = 0;
+			sketch[i] = 1;
+		}
+
 	}
-
-	// Just use the first one found
-	cudaSetDevice(0);
-
-	cout << "Allocating CUDA memory" << '\n';
-
-	// Allocate GPU memory
-	cudaMallocManaged(&src, num_of_edges * sizeof(uint32_t));
-	cudaMallocManaged(&dst, num_of_edges * sizeof(uint32_t));
-	cudaMallocManaged(&Degree_done, num_of_edges * sizeof(int));
-	cudaMallocManaged(&degree, num_of_nodes * sizeof(uint32_t));
-	cudaMallocManaged(&degree_cmt, num_of_nodes * sizeof(uint32_t));
-	cudaMallocManaged(&degree_S, num_of_nodes * sizeof(uint32_t));
-	cudaMallocManaged(&weight_S, num_of_edges * sizeof(int));
-
-	cudaMallocManaged(&communities, num_of_nodes * sizeof(uint32_t));
-	cudaMallocManaged(&h1, num_of_nodes * sizeof(int));
-	cudaMallocManaged(&h2, num_of_nodes * sizeof(int));
-	cudaMallocManaged(&h3, num_of_edges * sizeof(int));
-	cudaMallocManaged(&h4, num_of_edges * sizeof(int));
-	cudaMallocManaged(&sketch, huenumber * sizeof(int));
-
-	cudaMallocManaged((void**)&states, num_of_edges * sizeof(curandState_t));
-	
-	// Compute the number of CUDA blocks based on total NODES
-	int blockSize = 256;
-	int remain = num_of_nodes % blockSize;
-	int numBlocks = num_of_nodes / blockSize + (remain > 0 ? 1 : 0);
-
-	// Run kernel on the GPU that sets the initial values for the thread variables
-	initial<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, communities, degree, degree_cmt, degree_S, huenumber, sketch);
-
-	cudaDeviceSynchronize();
-
-	cudaError_t error = cudaGetLastError();
-	if (error != cudaSuccess)
-	{
-		printf("CUDA error in initialization: %s\n", cudaGetErrorString(error));
-		exit(-1);
-	}
-
-	cout << "CUDA initialization complete" << '\n';
 
 	// Read the input file again, now storing the edge connections
 	// in the CUDA allocated variables
@@ -557,6 +592,11 @@ int main(int argc, const char** argv)
 	*/
 
 	if (arg_map["community_detection"] == "SCoDA") {
+		
+		// Compute the number of CUDA blocks based on total NODES
+		int blockSize = 256;
+		int remain = num_of_nodes % blockSize;
+		int numBlocks = num_of_nodes / blockSize + (remain > 0 ? 1 : 0);
 
 		cout << "--- SCoDA Community Detection ---" << "\n";
 		
@@ -577,7 +617,7 @@ int main(int argc, const char** argv)
 			mainfor<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, degree_threshold, degree_cmt, src, dst, communities); 
 			
 			cudaDeviceSynchronize(); 
-			error = cudaGetLastError(); 
+			cudaError_t error = cudaGetLastError(); 
 			if (error != cudaSuccess) { 
 				printf("CUDA error in SCoDA main loop: %s\n", cudaGetErrorString(error)); 
 				exit(-1); 
@@ -589,7 +629,7 @@ int main(int argc, const char** argv)
 		communities_hashing<<<numBlocks, blockSize>>>(num_of_edges, num_of_nodes, communities, degree, huenumber, dst, src, degree_thresholdS, sketch, Degree_done); 
 		
 		cudaDeviceSynchronize(); 
-		error = cudaGetLastError(); 
+		cudaError_t error = cudaGetLastError(); 
 		if (error != cudaSuccess) { 
 			printf("CUDA error in community hashing: %s\n", cudaGetErrorString(error)); 
 			exit(-1); 
@@ -634,7 +674,6 @@ int main(int argc, const char** argv)
 	*/
 
 	// ForceAtlas2 parameters
-	const bool cuda_requested = std::string(arg_map["cuda_requested"]) == "gpu" or std::string(arg_map["cuda_requested"]) == "cuda";
 	const int max_iterations = std::stoi(arg_map["max_iterations"]);
 	const int num_screenshots = std::stoi(arg_map["num_screenshots"]);
 	const bool strong_gravity = std::string(arg_map["strong_gravity"]) == "sg" or std::string(arg_map["strong_gravity"]) == "strong";
@@ -690,32 +729,30 @@ int main(int argc, const char** argv)
 	}
 	cout << "The modularity is: " << qm << "/" << (2 * num_of_edges) << "\n";
 
-	// Free CUDA memory from the SCoDA algorithm for it is no longer needed
-	cudaFree(src);
-	cudaFree(dst);
-	cudaFree(degree);
-	cudaFree(Degree_done);
-	cudaFree(degree_cmt);
-	cudaFree(degree_S);
+	if (cuda_requested) {
+		// Free CUDA memory from the SCoDA algorithm for it is no longer needed
+		cudaFree(src);
+		cudaFree(dst);
+		cudaFree(degree);
+		cudaFree(Degree_done);
+		cudaFree(degree_cmt);
+		cudaFree(degree_S);
+	}
 	
 	// Create the GraphLayout and ForceAtlas2 objects.
 	RPGraph::GraphLayout layout(graph);
 	RPGraph::ForceAtlas2* fa2;
-	
-	// Load the CUDA version of the algorithm
-	// CHANGED TO CPU FOR MAGNETS
-	fa2 = new RPGraph::CPUForceAtlas2(layout, approximate,
-		strong_gravity, gravity, scale);
 
-// Running the CPU version of SCoDA is not supported
-/*#ifdef __NVCC__
+	// Choose an appropriate ForceAtlas2 implementation
+	// NOTE: Magnets are not supported in the CUDA implementation.
+#ifdef __NVCC__
 	if(cuda_requested)
 		fa2 = new RPGraph::CUDAForceAtlas2(layout, approximate, 
 			strong_gravity, gravity, scale);
 	else
 #endif
 	fa2 = new RPGraph::CPUForceAtlas2(layout, approximate,
-									  strong_gravity, gravity, scale);*/
+									  strong_gravity, gravity, scale);
 
 	// FA 2 parameters
 	fa2->attraction_exponent = std::stof(arg_map["attraction_exponent"]);
