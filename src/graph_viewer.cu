@@ -202,13 +202,14 @@ std::string parameter_keys[num_of_parameters] = {
 	"config_folder", "config_chain", "chain_output_name", "chain_separator", "include_timestamp",
 	// Extra parameters:
 	"community_detection", "attraction_exponent", "attraction", "random_seed", "pin_2_roots", "repulsion_d_squared",
-	"stop_on_divergence", "divergence_factor", "divergence_threshold", "use_distance_based_edge_direction",
-	"max_influence_distance", "pin_poles", "extra_pole_attraction",
+	"stop_on_divergence", "divergence_factor", "divergence_threshold", 
+	// Pole parameters:
+	"use_distance_based_edge_direction", "magnetic_pole_separation", "draw_common_edges",
+	"max_influence_distance", "pin_poles", "extra_pole_attraction", "use_pole_segmentation", "pole_list",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
-	"magnetic_pole_separation", "pole_list", "use_pole_segmentation",
 	// Cosmetic parameters:
-	"node_alpha", "edge_alpha", "square_coordinates", "draw_arrows", "min_arrow_length", "draw_common_edges",
+	"node_alpha", "edge_alpha", "square_coordinates", "draw_arrows", "min_arrow_length",
 }; 
 
 // A helpful method for naming the output files
@@ -331,10 +332,15 @@ void set_default_args(map<string, string>& map)
 	map["stop_on_divergence"] = "false";
 	map["divergence_factor"] = "1.75";
 	map["divergence_threshold"] = "1e+8";
+	// Pole parameters
+	map["pole_list"] = "";
+	map["pin_poles"] = "false";
 	map["use_distance_based_edge_direction"] = "false";
 	map["max_influence_distance"] = "-1";	
-	map["pin_poles"] = "false";
 	map["extra_pole_attraction"] = "1";
+	map["use_pole_segmentation"] = "false";
+	map["magnetic_pole_separation"] = "10000";
+	map["draw_common_edges"] = "true";
 	// Magnetic force parameters
 	map["use_magnetic_field"] = "false";
 	map["field_type"] = "linear";
@@ -343,16 +349,12 @@ void set_default_args(map<string, string>& map)
 	map["magnetic_constant"] = "1";
 	map["magnetic_alpha"] = "1";
 	map["magnetic_beta"] = "1";
-	map["magnetic_pole_separation"] = "10000";
-	map["pole_list"] = "";
-	map["use_pole_segmentation"] = "false";
 	// Cosmetic parameters
 	map["node_alpha"] = "0.8";
 	map["edge_alpha"] = "0.005";
 	map["square_coordinates"] = "false";
 	map["draw_arrows"] = "false";
 	map["min_arrow_length"] = "50";
-	map["draw_common_edges"] = "true";
 }
 
 // Split a string into an array of integers
