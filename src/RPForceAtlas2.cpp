@@ -57,6 +57,7 @@ namespace RPGraph
         use_magnetic_field = false;
         k_attraction = 1;
         attraction_exponent = 1;
+        extra_pole_attraction = 1;
         pin_2_roots = false;
         magetic_pole_separation = 10000;
         max_force = 0;
