@@ -34,6 +34,7 @@
 
 #include <queue>
 #include <unordered_set>
+#include <unordered_map>
 
 namespace RPGraph
 {
@@ -588,7 +589,7 @@ namespace RPGraph
         out_file.close();
     }
 
-    void GraphLayout::writeToNET(std::string path)
+    void GraphLayout::writeToNET(std::string path, std::unordered_map<long, std::string> node_labels)
     {
         if (is_file_exists(path.c_str()))
         {
@@ -599,13 +600,19 @@ namespace RPGraph
         std::ofstream out_file(path);
 
         // First output the nodes
+        // The highest node id in node_labels
+        long max_id = 0;
+        for (auto it = node_labels.begin(); it != node_labels.end(); ++it)
+            max_id = std::max(max_id, it->first);
 
-        out_file << "*Vertices " << graph.num_nodes() << "\n";
+        out_file << "*Vertices " << max_id << "\n";
 
         for (nid_t n = 0; n < graph.num_nodes(); ++n)
         {
             nid_t id = graph.node_map_r[n]; // id as found in edgelist
-            std::string label = "LABEL";
+            std::string label = "";
+            if (node_labels.find(id) != node_labels.end())
+                label = '\"' + node_labels[id] + '\"';
             out_file << id << " " << label << " " << getX(n) << " " << getY(n) << "\n";
         }
 
