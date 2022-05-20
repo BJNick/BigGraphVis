@@ -58,36 +58,6 @@ namespace RPGraph
 
     void GraphLayout::randomizePositions()
     {
-        /*if (is_file_exists("communities.txt")&&is_file_exists("coordinate.txt"))
-        {
-         uint32_t node,comm;
-            int xc,yc;
-          uint32_t *communities2 = new uint32_t[graph.num_nodes()];
-       int *xcoordinate = new int[graph.num_nodes()];
-       int *ycoordinate = new int[graph.num_nodes()];
-
-         std::ifstream inFile;
-         inFile.open("communities.txt");
-
-          for(int i=0;inFile >>node >>comm != NULL ;i++)
-          {
-              communities2[i]=comm;
-          }
-            inFile.close();
-          inFile.open("coordinate.txt");
-          for(int i=0;inFile >>comm >>xc >>yc != NULL ;i++)
-          {
-              xcoordinate[comm]=xc;
-              ycoordinate[comm]=yc;
-          }
-
-           for (nid_t i = 0; i <  graph.num_nodes(); ++i)
-          {
-              setX(i,xcoordinate[communities2[i]]);
-              setY(i,ycoordinate[communities2[i]]);
-          }
-         }
-          else*/
         for (nid_t i = 0; i < graph.num_nodes(); ++i)
         {
             setX(i, get_random(-width / 2.0, width / 2.0));
@@ -597,23 +567,6 @@ namespace RPGraph
         // Write it to disk.
         layout_png.write_png();
         out_color.close();
-        //********************************************
-        //********************************************
-        //********************************************
-        //********************************************
-        //********************************************
-
-        /* std::ofstream out_file("../../../files/coordinate.txt");
-         std::ofstream out_file2("../../../files/coordinate2.txt");
-     for (nid_t n = 0; n < graph.num_nodes(); ++n)
-     {
-         nid_t id = graph.node_map_r[n]; // id as found in edgelist
-         out_file << id << " " << (getX(n) - minX)*xScale << " " <<  (getY(n) - minY)*yScale<<" " << graph.degree(n)<<"\n";
-         out_file2 << id << " " << getX(n) << " " <<  getY(n)<<"\n";
-     }
-
-     out_file.close();
-         out_file2.close();*/
     }
 
     void GraphLayout::writeToCSV(std::string path)
