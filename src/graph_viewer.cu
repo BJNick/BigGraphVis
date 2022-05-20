@@ -823,6 +823,14 @@ int main(int argc, const char** argv)
 		cudaFree(Degree_done);
 		cudaFree(degree_cmt);
 		cudaFree(degree_S);
+	} else {
+		// Free memory from the SCoDA algorithm for it is no longer needed
+		free(src);
+		free(dst);
+		free(degree);
+		free(Degree_done);
+		free(degree_cmt);
+		free(degree_S);
 	}
 	
 	// Create the GraphLayout and ForceAtlas2 objects.
