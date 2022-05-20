@@ -328,7 +328,7 @@ void set_default_args(map<string, string>& map)
 	map["random_seed"] = "1234";
 	map["pin_2_roots"] = "false";
 	map["repulsion_d_squared"] = "false";
-	map["stop_on_divergence"] = "true";
+	map["stop_on_divergence"] = "false";
 	map["divergence_factor"] = "1.75";
 	map["divergence_threshold"] = "1e+8";
 	map["use_distance_based_edge_direction"] = "false";
