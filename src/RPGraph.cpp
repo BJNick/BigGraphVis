@@ -37,6 +37,7 @@ using namespace std;
 #include <fstream>
 #include <algorithm>
 #include "RPGraph.hpp"
+
 namespace RPGraph
 {
     /* Definitions for UGraph */
@@ -68,7 +69,7 @@ namespace RPGraph
         {
             if(s[i]<=m&&t[i]<=m)
                 if(communities[s[i]]>0&&communities[s[i]]<m&&communities[t[i]]>0&&communities[t[i]]<m)
-                    if(communities[s[i]] != communities[t[i]] && !has_edge(communities[s[i]], communities[t[i]])) 
+                    if(communities[s[i]] != communities[t[i]]) 
                         add_edge(communities[s[i]], communities[t[i]],degree_S[communities[s[i]]],degree_S[communities[t[i]]]); 
            
         }
@@ -117,7 +118,6 @@ namespace RPGraph
     void UGraph::add_edge(nid_t s, nid_t t,nid_t degree_s,nid_t degree_t)
     {
         
-        if(has_edge(s, t)) return;
         if(!has_node(s)) add_node(s,degree_s);
         if(!has_node(t)) add_node(t,degree_t);
         nid_t s_mapped = node_map[s];
@@ -125,10 +125,20 @@ namespace RPGraph
       /*  if(degree_s>0||degree_t>0)
            cout<<degree_s<<" "<<degree_t<<'\n';*/
         // Insert edge into adjacency_list
-        adjacency_list[std::min(s_mapped, t_mapped)].push_back(std::max(s_mapped, t_mapped));
-        degrees[s_mapped] += degree_s+1;
-        degrees[t_mapped] +=degree_t+ 1;
-        edge_count++;
+        if (!has_edge(s, t)) {
+            adjacency_list[std::min(s_mapped, t_mapped)].push_back(std::max(s_mapped, t_mapped));
+            degrees[s_mapped] += degree_s+1;
+            degrees[t_mapped] +=degree_t+ 1;
+            edge_count++;
+        }
+
+        // Account for directed edges
+        in_adj_list[t_mapped].push_back(s_mapped);
+        in_degrees[t_mapped] += 1;
+        initial_edge_direction[s_mapped][t_mapped] = true;
+        initial_edge_direction[t_mapped][s_mapped] = false;
+        is_edge_directed[s_mapped][t_mapped] = !is_edge_directed[s_mapped][t_mapped];
+        is_edge_directed[t_mapped][s_mapped] = !is_edge_directed[s_mapped][t_mapped];
     }
 
     nid_t UGraph::num_nodes()
@@ -152,7 +162,7 @@ namespace RPGraph
 
     nid_t UGraph::in_degree(nid_t nid)
     {
-        return degree(nid);
+        return in_degrees[nid];
     }
 
     nid_t UGraph::out_degree(nid_t nid)

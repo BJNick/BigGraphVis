@@ -712,7 +712,9 @@ namespace RPGraph
     {
         if (use_distance_based_edge_direction)
             return getDistanceBasedEdgeDirection(n, t);
-        if (graph.node_map_r[n] < graph.node_map_r[t])
+        if (!graph.is_edge_directed[n][t])
+            return 0;
+        else if (graph.initial_edge_direction[n][t])
             return 1;
         else
             return -1;
@@ -811,12 +813,14 @@ namespace RPGraph
                 for (nid_t n2 : graph.neighbors_with_geq_id(n1))
                 {
                     // INEFFICIENT ITERATION; connects from higher to lower id
-                    if (n1 == n && connected_nodes.find(n2) == connected_nodes.end() && getEdgeDirection(n1, n2) < 0)
+                    if (n1 == n && connected_nodes.find(n2) == connected_nodes.end() && (getEdgeDirection(n1, n2) < 0 
+                        || (!use_distance_based_edge_direction && getEdgeDirection(n1, n2) == 0)))
                     {
                         connected_nodes.insert(n2);
                         q.push(n2);
                     }
-                    if (n2 == n && connected_nodes.find(n1) == connected_nodes.end() && getEdgeDirection(n1, n2) > 0)
+                    if (n2 == n && connected_nodes.find(n1) == connected_nodes.end() && (getEdgeDirection(n1, n2) > 0
+                        || (!use_distance_based_edge_direction && getEdgeDirection(n1, n2) == 0)))
                     {
                         connected_nodes.insert(n1);
                         q.push(n1);

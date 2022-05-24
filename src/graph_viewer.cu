@@ -899,7 +899,7 @@ int main(int argc, const char** argv)
 	// Print the degree of each pole in pole_list
 	cout << "Pole degrees: {";
 	for (int i = 0; i < pole_list_size; i++)
-		cout << layout.graph.degree(layout.graph.node_map[pole_list[i]])/2 << (i == pole_list_size - 1 ? "" : ",");
+		cout << layout.graph.in_degree(layout.graph.node_map[pole_list[i]]) << (i == pole_list_size - 1 ? "" : ",");
 	cout << "}\n";
 
 	// MAGNETIC FORCE PARAMETERS

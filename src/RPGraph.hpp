@@ -27,6 +27,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace RPGraph
 {
@@ -59,6 +60,9 @@ namespace RPGraph
         std::unordered_map<nid_t, nid_t> degrees;
         std::unordered_map<nid_t, std::vector<nid_t>> adjacency_list;
 
+        std::unordered_map<nid_t, nid_t> in_degrees;
+        std::unordered_map<nid_t, std::vector<nid_t>> in_adj_list;
+
         bool has_node(nid_t nid);
         bool has_edge(nid_t s, nid_t t);
         void add_node(nid_t nid,nid_t degree_s);
@@ -78,6 +82,9 @@ namespace RPGraph
         virtual nid_t out_degree(nid_t nid) override;
 
         std::vector<nid_t> neighbors_with_geq_id(nid_t nid) override;
+
+        std::unordered_map<nid_t, std::unordered_map<nid_t, bool>> initial_edge_direction;
+        std::unordered_map<nid_t, std::unordered_map<nid_t, bool>> is_edge_directed;
     };
 
     // Compressed sparserow (CSR) for undirected graphs.
