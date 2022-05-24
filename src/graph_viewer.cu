@@ -20,6 +20,7 @@ using namespace std;
 #include <iomanip>
 #include <map>
 #include <ctype.h>
+#include <unordered_map>
 
 using namespace std::chrono;
 
@@ -192,7 +193,7 @@ void find_degree_S(int num_of_edges, int num_of_nodes, uint32_t* communities, ui
 
 //============================================================
 
-const int num_of_parameters = 50; // arbitrary number
+const int num_of_parameters = 60; // arbitrary number
 
 std::string parameter_keys[num_of_parameters] = {
 	// ForceAtlas2 parameters:
@@ -202,7 +203,7 @@ std::string parameter_keys[num_of_parameters] = {
 	"config_folder", "config_chain", "chain_output_name", "chain_separator", "include_timestamp",
 	// Extra parameters:
 	"community_detection", "attraction_exponent", "attraction", "random_seed", "pin_2_roots", "repulsion_d_squared",
-	"stop_on_divergence", "divergence_factor", "divergence_threshold", 
+	"stop_on_divergence", "divergence_factor", "divergence_threshold", "avoid_cpu_allocation",
 	// Pole parameters:
 	"use_distance_based_edge_direction", "magnetic_pole_separation", "draw_common_edges",
 	"max_influence_distance", "pin_poles", "extra_pole_attraction", "use_pole_segmentation", "pole_list",
@@ -332,6 +333,7 @@ void set_default_args(map<string, string>& map)
 	map["stop_on_divergence"] = "false";
 	map["divergence_factor"] = "1.75";
 	map["divergence_threshold"] = "1e+8";
+	map["avoid_cpu_allocation"] = "false";
 	// Pole parameters
 	map["pole_list"] = "";
 	map["pin_poles"] = "false";
@@ -374,6 +376,132 @@ int* split_to_int(string& s, char delim, int* arr, int max_size)
 		i++;
 	}
 	return arr;
+}
+
+/*
+	uint32_t *communities, *src, *dst, num_of_edges, num_of_nodes;
+	uint32_t *degree, *degree_cmt, *degree_S;
+	int src_id, dst_id, *sketch, *h1, *h2, *h3, *h4, *Degree_done, *weight_S;
+*/
+
+void read_data_from_file(string in_path, uint32_t* src, uint32_t* dst, uint32_t* degree, unordered_map<long, string>& node_labels) {
+	// Read the input file again, now storing the edge connections
+	// in the CUDA allocated variables
+	// Read the file line by line instead of tokens
+	ifstream inFile;
+	if (!is_file_exists(in_path)) {
+		cout << "error: File not found: " << in_path << "\n";
+		exit(EXIT_FAILURE);
+	}
+	inFile.open(in_path);
+	std::string line;
+	int edge_id = 0;
+	bool edge_mode = true;
+	bool vertex_mode = false;
+	while (getline(inFile, line)) {
+		// if line starts with a *, check if it says *Edges or *Arcs
+		if (line[0] == '*') {
+			if (line.find("Edges") != std::string::npos || line.find("Arcs") != std::string::npos) {
+				edge_mode = true;
+				vertex_mode = false;
+				continue;
+			} else if (line.find("Vertices") != std::string::npos) {
+				edge_mode = false;
+				vertex_mode = true;
+				continue;
+			} else {
+				cout << "Error reading input file" << '\n';
+				exit(EXIT_FAILURE);
+			}
+		}
+		if (edge_mode) {
+			std::string src_id_s, dst_id_s;
+			long src_id, dst_id;
+			istringstream iss(line);
+			iss >> src_id_s >> dst_id_s;
+			src_id = stol(src_id_s);
+			dst_id = stol(dst_id_s);
+			src[edge_id] = src_id;
+			dst[edge_id] = dst_id;
+			// Compute the degree of each node
+			degree[src_id]++;
+			if (dst_id != src_id)
+				degree[dst_id]++;
+			edge_id++;
+		} else if (vertex_mode) {
+			// The string is of format 
+			//  1 "S. Kambhampati"    0.0000    0.0000    0.5000 metadata
+			long node_id = 0;
+			std::string node_label;
+			// Split the string using quotes as delimiter
+			std::stringstream ss(line);
+			std::string token;
+			int i = 0;
+			while (std::getline(ss, token, '\"')) {
+				if (i == 0) {
+					node_id = stol(token);
+				} else if (i == 1) {
+					node_label = token;
+				} // Ignore the rest of the tokens (metadata)
+				i++;
+			}
+			node_labels[node_id] = node_label;
+		}
+	}
+	inFile.close();
+}
+
+void read_node_edge_counts(string in_path, uint32_t& num_of_nodes, uint32_t& num_of_edges) {
+	// Read the file line by line instead of tokens
+	ifstream inFile;
+	if (!is_file_exists(in_path)) {
+		cout << "error: File not found: " << in_path << "\n";
+		exit(EXIT_FAILURE);
+	}
+	inFile.open(in_path);
+	std::string line;
+	int edge_id = 0;
+	bool edge_mode = true;
+	bool vertex_mode = false;
+	num_of_nodes = 0;
+	num_of_edges = 0;
+	uint16_t max_node_id = 0;
+	while (getline(inFile, line)) {
+		// if line starts with a *, check if it says *Edges or *Arcs
+		if (line[0] == '*') {
+			if (line.find("Edges") != std::string::npos || line.find("Arcs") != std::string::npos) {
+				edge_mode = true;
+				vertex_mode = false;
+				continue;
+			} else if (line.find("Vertices") != std::string::npos) {
+				edge_mode = false;
+				vertex_mode = true;
+				continue;
+			} else {
+				cout << "Error reading input file" << '\n';
+				exit(EXIT_FAILURE);
+			}
+		}
+		if (edge_mode) {
+			std::string src_id_s, dst_id_s;
+			long src_id, dst_id;
+			istringstream iss(line);
+			iss >> src_id_s >> dst_id_s;
+			src_id = stol(src_id_s);
+			dst_id = stol(dst_id_s);
+			if (src_id > max_node_id)
+				max_node_id = src_id;
+			if (dst_id > max_node_id)
+				max_node_id = dst_id;
+			num_of_edges++;
+			edge_id++;
+		} else if (vertex_mode) {
+			num_of_nodes++;
+		}
+	}
+	num_of_nodes = max_node_id;
+	num_of_edges = edge_id;
+	inFile.close();
 }
 
 //============================================================
@@ -427,6 +555,8 @@ int main(int argc, const char** argv)
 	uint32_t *degree, *degree_cmt, *degree_S;
 	int src_id, dst_id, *sketch, *h1, *h2, *h3, *h4, *Degree_done, *weight_S;
 
+	std::unordered_map<long, string> node_labels;
+
 	// SCoDA Community Detection parameters
 	uint32_t degree_threshold = std::stoul(arg_map["degree_threshold"]);
 	uint32_t degree_thresholdS = degree_threshold;
@@ -438,46 +568,22 @@ int main(int argc, const char** argv)
 	std::string in_path = arg_map["in_path"];
 	std::string out_path = arg_map["out_path"];
 
-	// Read the input file and count the number of nodes and edges
-	ifstream inFile;
-
-	if (!is_file_exists(in_path)) {
-		cout << "error: File not found: " << in_path << "\n";
-		exit(EXIT_FAILURE);
-	}
-
-	inFile.open(in_path);
-
-	std::string src_id_s, dst_id_s;
-	num_of_nodes = 0;
-	num_of_edges = 0; 
-
-	for (int i = 0; inFile >> src_id_s >> dst_id_s != NULL; i++)
-	{
-		if (isdigit(src_id_s[0]))
-		{
-			src_id = stol(src_id_s);
-			dst_id = stol(dst_id_s);
-			// Count the number of edges
-			num_of_edges++;
-			// Set the number of nodes as the greatest node id found
-			if (src_id > num_of_nodes)
-				num_of_nodes = src_id;
-			if (dst_id > num_of_nodes)
-				num_of_nodes = dst_id;
-		}
-	}
+	read_node_edge_counts(in_path, num_of_nodes, num_of_edges);
 
 	// TODO: Better solution for iterating nodes
 	num_of_nodes += 1; // Count the last node id as well
 
 	cout << "Number of nodes: " << num_of_nodes << '\n';
 	cout << "Number of edges: " << num_of_edges << '\n';
-	inFile.close();
 
 	const bool cuda_requested = std::string(arg_map["cuda_requested"]) == "gpu" or std::string(arg_map["cuda_requested"]) == "cuda";
 
-	if (cuda_requested) {
+	const bool avoid_cpu_allocation = std::string(arg_map["avoid_cpu_allocation"]) == "true";
+
+	if (avoid_cpu_allocation || cuda_requested) {
+
+		if (avoid_cpu_allocation)
+			cout << "NOTICE: CUDA is still used for memory allocation due to errors with the CPU version.\n";
 
 		// Sets the CUDA computing device
 		int device_count;
@@ -535,6 +641,8 @@ int main(int argc, const char** argv)
 
 	} else {
 
+		// THIS ALLOCATION DOES NOT WORK AS INTENDED
+
 		// Allocate CPU memory for the arrays
 		src = (uint32_t*)malloc(num_of_edges * sizeof(uint32_t));
 		dst = (uint32_t*)malloc(num_of_edges * sizeof(uint32_t));
@@ -563,26 +671,10 @@ int main(int argc, const char** argv)
 		}
 
 	}
+	
+	std::cout << "Started file reading" << '\n';
 
-	// Read the input file again, now storing the edge connections
-	// in the CUDA allocated variables
-
-	inFile.open(in_path);
-	for (int i = 0; inFile >> src_id_s >> dst_id_s != NULL; i++)
-	{
-		if (isdigit(src_id_s[0]))
-		{
-			src_id = stol(src_id_s);
-			dst_id = stol(dst_id_s);
-			// Store the data in a CUDA allocated arrays
-			src[i] = src_id;
-			dst[i] = dst_id;
-			// Compute the degree of each node
-			degree[src_id]++;
-			if (dst_id != src_id)
-				degree[dst_id]++;
-		}
-	}
+	read_data_from_file(in_path, src, dst, degree, node_labels);
 	
 	cout << "Graph Data Loaded" << "\n";
 	
@@ -731,7 +823,7 @@ int main(int argc, const char** argv)
 	}
 	cout << "The modularity is: " << qm << "/" << (2 * num_of_edges) << "\n";
 
-	if (cuda_requested) {
+	if (avoid_cpu_allocation || cuda_requested) {
 		// Free CUDA memory from the SCoDA algorithm for it is no longer needed
 		cudaFree(src);
 		cudaFree(dst);
@@ -739,6 +831,14 @@ int main(int argc, const char** argv)
 		cudaFree(Degree_done);
 		cudaFree(degree_cmt);
 		cudaFree(degree_S);
+	} else {
+		// Free memory from the SCoDA algorithm for it is no longer needed
+		free(src);
+		free(dst);
+		free(degree);
+		free(Degree_done);
+		free(degree_cmt);
+		free(degree_S);
 	}
 	
 	// Create the GraphLayout and ForceAtlas2 objects.
@@ -866,7 +966,7 @@ int main(int argc, const char** argv)
 		else if (out_format == "bin")
 			layout.writeToBin(out_filepath);
 		else if (out_format == "net")
-			layout.writeToNET(out_filepath);
+			layout.writeToNET(out_filepath, node_labels);
 
 		printf("done.\n");
     };

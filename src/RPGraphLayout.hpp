@@ -67,7 +67,7 @@ namespace RPGraph
         void writeToPNG(const int image_w, const int image_h, std::string path);
         void writeToCSV(std::string path);
         void writeToBin(std::string path);
-        void writeToNET(std::string path);
+        void writeToNET(std::string path, std::unordered_map<long, std::string> node_labels);
 
         // Additional cosmetic parameters
         bool square_coordinates;
