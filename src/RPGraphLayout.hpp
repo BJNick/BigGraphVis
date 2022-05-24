@@ -82,13 +82,14 @@ namespace RPGraph
         int max_influence_distance;
 
         //std::unordered_set<nid_t> connected_to_poles = std::unordered_set<nid_t>();
-        std::unordered_set<nid_t>* getConnectedToList();
+        //std::unordered_set<nid_t>* getConnectedToList();
 
         nid_t primary(nid_t n, nid_t t);
         nid_t secondary(nid_t n, nid_t t);
         int getEdgeDirection(nid_t n, nid_t t);
+        int getInitialEdgeDirection(nid_t n, nid_t t);
 
-        void addConnectedNodes(std::unordered_set<nid_t> &connected_nodes, nid_t node);
+        //void addConnectedNodes(std::unordered_set<nid_t> &connected_nodes, nid_t node);
         void getNodeColor(nid_t n, double &r, double &g, double &b);
         bool isConnectedTo(nid_t node, int pole);
         bool isDisconnected(nid_t node);

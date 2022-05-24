@@ -679,7 +679,8 @@ namespace RPGraph
     }
     
     // Contains a singleton instance of the connected sets
-    std::unordered_set<nid_t>* GraphLayout::getConnectedToList() {
+    // No longer used
+    /*std::unordered_set<nid_t>* GraphLayout::getConnectedToList() {
         static std::unordered_set<nid_t>* connected_to = new std::unordered_set<nid_t>[pole_list_size];
         static bool initialized = false;
         if (!initialized) {
@@ -690,7 +691,7 @@ namespace RPGraph
             initialized = true;
         }
         return connected_to;
-    }
+    }*/
 
     nid_t GraphLayout::primary(nid_t n, nid_t t)
     {
@@ -712,6 +713,12 @@ namespace RPGraph
     {
         if (use_distance_based_edge_direction)
             return getDistanceBasedEdgeDirection(n, t);
+        else
+            return getInitialEdgeDirection(n, t);
+    }
+
+    int GraphLayout::getInitialEdgeDirection(nid_t n, nid_t t)
+    {
         if (!graph.is_edge_directed[n][t])
             return 0;
         else if (graph.initial_edge_direction[n][t])
@@ -723,41 +730,36 @@ namespace RPGraph
     // Is the given node connected to the given pole? uses connected_to to determine
     bool GraphLayout::isConnectedTo(nid_t node, int pole)
     {
-        std::unordered_set<nid_t>* connected_to = getConnectedToList();
-        if (pole >= pole_list_size) return false;
-        return connected_to[pole].find(node) != connected_to[pole].end();
+        // Rewrite:
+        int closest, distance;
+        getClosestPole(node, closest, distance);
+        if (closest == -1) return false;
+        if (closest == -2) return true;
+        return pole == closest;
     }
 
     // Is the given node completely disconnected from all poles?
     bool GraphLayout::isDisconnected(nid_t node)
     {
-        std::unordered_set<nid_t>* connected_to = getConnectedToList();
-        for (int i = 0; i < pole_list_size; i++)
-            if (connected_to[i].find(node) != connected_to[i].end())
-                return false;
-        return true;
+        int closest, distance;
+        getClosestPole(node, closest, distance);
+        return closest == -1;
     }
 
     // Is the given node connected to two or more poles?
     bool GraphLayout::isConnectedToTwoPoles(nid_t node)
     {
-        std::unordered_set<nid_t>* connected_to = getConnectedToList();
-        int count = 0;
-        for (int i = 0; i < pole_list_size; i++)
-            if (connected_to[i].find(node) != connected_to[i].end())
-                count++;
-        return count >= 2;
+        int closest, distance;
+        getClosestPole(node, closest, distance);
+        return closest == -2;
     }
 
     // Is the given node connected to ONLY one pole?
     bool GraphLayout::isConnectedToOneOnly(nid_t node)
     {
-        std::unordered_set<nid_t>* connected_to = getConnectedToList();
-        int count = 0;
-        for (int i = 0; i < pole_list_size; i++)
-            if (connected_to[i].find(node) != connected_to[i].end())
-                count++;
-        return count == 1;
+        int closest, distance;
+        getClosestPole(node, closest, distance);
+        return closest >= 0;
     }
 
     // Get color of a node depending on which pole it is connected to
@@ -797,7 +799,8 @@ namespace RPGraph
     }
 
     // Add nodes to the set that are connected to the given node through any path
-    void GraphLayout::addConnectedNodes(std::unordered_set<nid_t> &connected_nodes, nid_t node)
+    // No longer used
+    /*void GraphLayout::addConnectedNodes(std::unordered_set<nid_t> &connected_nodes, nid_t node)
     {
         std::queue<nid_t> q;
         q.push(node);
@@ -828,7 +831,7 @@ namespace RPGraph
                 }
             }
         }
-    }
+    }*/
 
     bool GraphLayout::sameColor(nid_t n1, nid_t n2)
     {
@@ -847,6 +850,10 @@ namespace RPGraph
         q.push(node);
         visited.insert(node);
         distances.resize(graph.num_nodes());
+        // Fill in distances with -1
+        for (int i = 0; i < graph.num_nodes(); ++i)
+            distances[i] = -1;
+
         distances[node] = 0;
 
         while (!q.empty())
@@ -859,14 +866,18 @@ namespace RPGraph
                 for (nid_t n2 : graph.neighbors_with_geq_id(n1))
                 {
                     // INEFFICIENT ITERATION
-                    if (n1 == n && visited.find(n2) == visited.end())
+                    if (n1 == n && visited.find(n2) == visited.end() && (getInitialEdgeDirection(n1, n2) <= 0 
+                        || use_distance_based_edge_direction))
                     {
+                        if (max_influence_distance != -1 && distances[n1] >= max_influence_distance) continue;
                         visited.insert(n2);
                         q.push(n2);
                         distances[n2] = distances[n] + 1;
                     }
-                    if (n2 == n && visited.find(n1) == visited.end())
+                    if (n2 == n && visited.find(n1) == visited.end() && (getInitialEdgeDirection(n1, n2) >= 0 
+                        || use_distance_based_edge_direction))
                     {
+                        if (max_influence_distance != -1 && distances[n2] >= max_influence_distance) continue;
                         visited.insert(n1);
                         q.push(n1);
                         distances[n1] = distances[n] + 1;
@@ -898,10 +909,10 @@ namespace RPGraph
         for (int i = 0; i < pole_list_size; i++)
         {
             int d = getShortestDistancesList()[i][node];
-            if (d < min_distance)
+            if (d < min_distance && d >= 0)
             {
                 min_distance = d;
-                pole = pole_list[i];
+                pole = i;
                 the_same_distance = false;
             } else if (d == min_distance)
             {
