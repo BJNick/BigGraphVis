@@ -437,13 +437,22 @@ void read_data_from_file(string in_path, uint32_t* src, uint32_t* dst, uint32_t*
 			std::stringstream ss(line);
 			std::string token;
 			int i = 0;
-			while (std::getline(ss, token, '\"')) {
-				if (i == 0) {
-					node_id = stol(token);
-				} else if (i == 1) {
-					node_label = token;
-				} // Ignore the rest of the tokens (metadata)
-				i++;
+			// if line contains double quotes, split using double quotes
+			if (line.find("\"") != std::string::npos) {
+				while (getline(ss, token, '\"')) {
+					if (i == 0) {
+						node_id = stol(token);
+					} else if (i == 1) {
+						node_label = token;
+					}
+					i++;
+				}
+			} else {
+				// if line does not contain double quotes, split using whitespace
+				istringstream iss(line);
+				std::string node_id_s;
+				iss >> node_id_s >> node_label;
+				node_id = stol(node_id_s);
 			}
 			node_labels[node_id] = node_label;
 		}
@@ -943,12 +952,12 @@ int main(int argc, const char** argv)
 		if (arg_map["include_timestamp"] != "true")
 			timestamp = "";
 
-		std::string out_filename = edgelist_basename + "_" + timestamp + fill_zeros(iteration, 4) + "." + out_format;	
+		std::string out_filename = edgelist_basename + "_" + timestamp + fill_zeros(iteration, 4) + ".";	
 		// Example: "tree_edgelist.txt_123456789_0500.png"
 
 		// Or use a config chain name instead
 		if (arg_map["chain_output_name"] == "true")
-			out_filename = arg_map["config_chain"] + timestamp + fill_zeros(iteration, 4) + "." + out_format;
+			out_filename = arg_map["config_chain"] + timestamp + fill_zeros(iteration, 4) + ".";
 		// Example: "tree m-polar 123456789_0500.png"
 
 		std::string out_filepath = out_path + "/" + out_filename;
@@ -960,13 +969,17 @@ int main(int argc, const char** argv)
 		fa2->sync_layout();
 
 		if (out_format == "png")
-			layout.writeToPNG(image_w, image_h, out_filepath);
+			layout.writeToPNG(image_w, image_h, out_filepath + "png");
 		else if (out_format == "csv")
-			layout.writeToCSV(out_filepath);
+			layout.writeToCSV(out_filepath + "csv");
 		else if (out_format == "bin")
-			layout.writeToBin(out_filepath);
+			layout.writeToBin(out_filepath + "bin");
 		else if (out_format == "net")
-			layout.writeToNET(out_filepath, node_labels);
+			layout.writeToNET(out_filepath + "net", node_labels);
+		else if (out_format == "png+net") {
+			layout.writeToPNG(image_w, image_h, out_filepath + "png");
+			layout.writeToNET(out_filepath + "net", node_labels);
+		}
 
 		printf("done.\n");
     };
