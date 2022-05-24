@@ -193,7 +193,7 @@ void find_degree_S(int num_of_edges, int num_of_nodes, uint32_t* communities, ui
 
 //============================================================
 
-const int num_of_parameters = 50; // arbitrary number
+const int num_of_parameters = 60; // arbitrary number
 
 std::string parameter_keys[num_of_parameters] = {
 	// ForceAtlas2 parameters:
@@ -203,7 +203,7 @@ std::string parameter_keys[num_of_parameters] = {
 	"config_folder", "config_chain", "chain_output_name", "chain_separator", "include_timestamp",
 	// Extra parameters:
 	"community_detection", "attraction_exponent", "attraction", "random_seed", "pin_2_roots", "repulsion_d_squared",
-	"stop_on_divergence", "divergence_factor", "divergence_threshold", 
+	"stop_on_divergence", "divergence_factor", "divergence_threshold", "avoid_cpu_allocation",
 	// Pole parameters:
 	"use_distance_based_edge_direction", "magnetic_pole_separation", "draw_common_edges",
 	"max_influence_distance", "pin_poles", "extra_pole_attraction", "use_pole_segmentation", "pole_list",
@@ -333,6 +333,7 @@ void set_default_args(map<string, string>& map)
 	map["stop_on_divergence"] = "false";
 	map["divergence_factor"] = "1.75";
 	map["divergence_threshold"] = "1e+8";
+	map["avoid_cpu_allocation"] = "false";
 	// Pole parameters
 	map["pole_list"] = "";
 	map["pin_poles"] = "false";
@@ -577,7 +578,12 @@ int main(int argc, const char** argv)
 
 	const bool cuda_requested = std::string(arg_map["cuda_requested"]) == "gpu" or std::string(arg_map["cuda_requested"]) == "cuda";
 
-	if (cuda_requested) {
+	const bool avoid_cpu_allocation = std::string(arg_map["avoid_cpu_allocation"]) == "true";
+
+	if (avoid_cpu_allocation || cuda_requested) {
+
+		if (avoid_cpu_allocation)
+			cout << "NOTICE: CUDA is still used for memory allocation due to errors with the CPU version.\n";
 
 		// Sets the CUDA computing device
 		int device_count;
@@ -634,6 +640,8 @@ int main(int argc, const char** argv)
 		cout << "CUDA initialization complete" << '\n';
 
 	} else {
+
+		// THIS ALLOCATION DOES NOT WORK AS INTENDED
 
 		// Allocate CPU memory for the arrays
 		src = (uint32_t*)malloc(num_of_edges * sizeof(uint32_t));
@@ -815,7 +823,7 @@ int main(int argc, const char** argv)
 	}
 	cout << "The modularity is: " << qm << "/" << (2 * num_of_edges) << "\n";
 
-	if (cuda_requested) {
+	if (avoid_cpu_allocation || cuda_requested) {
 		// Free CUDA memory from the SCoDA algorithm for it is no longer needed
 		cudaFree(src);
 		cudaFree(dst);
