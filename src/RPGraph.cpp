@@ -132,13 +132,18 @@ namespace RPGraph
             edge_count++;
         }
 
+        // Check if connection already exists in the map
+        if (std::count(in_adj_list[t_mapped].begin(), in_adj_list[t_mapped].end(), s_mapped) != 0) {
+            return;
+        }
+
         // Account for directed edges
         in_adj_list[t_mapped].push_back(s_mapped);
         in_degrees[t_mapped] += 1;
         initial_edge_direction[s_mapped][t_mapped] = true;
         initial_edge_direction[t_mapped][s_mapped] = false;
         is_edge_directed[s_mapped][t_mapped] = !is_edge_directed[s_mapped][t_mapped];
-        is_edge_directed[t_mapped][s_mapped] = !is_edge_directed[s_mapped][t_mapped];
+        is_edge_directed[t_mapped][s_mapped] = !is_edge_directed[t_mapped][s_mapped];
     }
 
     nid_t UGraph::num_nodes()
