@@ -92,22 +92,46 @@ namespace RPGraph
             float extraneous_edge_multiplier = 0.0;
 
             // Only apply the force in the desired direction, towards the pole (if enabled)
-            if (use_pole_segmentation && layout.getEdgeDirection(n,t)==0 && (layout.isConnectedToTwoPoles(n) && layout.isConnectedToTwoPoles(t))) {
-                f_a_over_d *= extraneous_edge_multiplier;
-                f_a_over_d_T *= extraneous_edge_multiplier;
-            } else if (use_pole_segmentation && layout.isConnectedToOneOnly(layout.primary(n, t)) && layout.isConnectedToTwoPoles(layout.secondary(n, t))) {
-                if (layout.getEdgeDirection(n, t) > 0) {
-                    f_a_over_d_T *= extraneous_edge_multiplier;
-                } else {
+            // For undirected graphs
+            if (use_pole_segmentation && layout.use_distance_based_edge_direction) {
+                if (layout.getEdgeDirection(n,t)==0 && (layout.isConnectedToTwoPoles(n) && layout.isConnectedToTwoPoles(t))) {
                     f_a_over_d *= extraneous_edge_multiplier;
+                    f_a_over_d_T *= extraneous_edge_multiplier;
+                } else if (layout.isConnectedToOneOnly(layout.primary(n, t)) && layout.isConnectedToTwoPoles(layout.secondary(n, t))) {
+                    if (layout.getEdgeDirection(n, t) > 0) {
+                        f_a_over_d_T *= extraneous_edge_multiplier;
+                    } else {
+                        f_a_over_d *= extraneous_edge_multiplier;
+                    }
+                } else if (layout.isConnectedToOneOnly(n) && layout.isConnectedToOneOnly(t)) {
+                    if (layout.getEdgeDirection(n, t) < 0) {
+                        f_a_over_d_T *= extra_pole_attraction; // Default: 1.0
+                    } else {
+                        f_a_over_d *= extra_pole_attraction;
+                    }
                 }
-            } else if (use_pole_segmentation && layout.isConnectedToOneOnly(n) && layout.isConnectedToOneOnly(t)) {
-                if (layout.getEdgeDirection(n, t) < 0) {
-                    f_a_over_d_T *= extra_pole_attraction; // Default: 1.0
-                } else {
-                    f_a_over_d *= extra_pole_attraction;
+            }
+
+            if (use_pole_segmentation && !layout.use_distance_based_edge_direction) {
+                if (layout.isConnectedToOneOnly(n) && (layout.isConnectedToTwoPoles(t) || layout.isDisconnected(t))) {
+                    f_a_over_d *= extraneous_edge_multiplier;
+                } else if (layout.isConnectedToOneOnly(t) && (layout.isConnectedToTwoPoles(n) || layout.isDisconnected(n))) {
+                    f_a_over_d_T *= extraneous_edge_multiplier;
+                } else if (layout.isConnectedToTwoPoles(n) && layout.isConnectedToTwoPoles(t)) {
+                    f_a_over_d *= extraneous_edge_multiplier;
+                    f_a_over_d_T *= extraneous_edge_multiplier;
+                } else if (layout.isConnectedToOneOnly(n) && layout.isConnectedToOneOnly(t)) {
+                    int closest_pole_n, closest_pole_t;
+                    int dist_n, dist_t;
+                    layout.getClosestPole(n, closest_pole_n, dist_n);
+                    layout.getClosestPole(t, closest_pole_t, dist_t);
+                    if (dist_n < dist_t) {
+                        f_a_over_d_T *= extra_pole_attraction;
+                    } else {
+                        f_a_over_d *= extra_pole_attraction;
+                    }
                 }
-            }  
+            }
 
             f += layout.getDistanceVector(n, t) * f_a_over_d;
 
