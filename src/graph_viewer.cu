@@ -207,7 +207,7 @@ std::string parameter_keys[num_of_parameters] = {
 	// Pole parameters:
 	"use_distance_based_edge_direction", "magnetic_pole_separation", "draw_common_edges",
 	"max_influence_distance", "pin_poles", "extra_pole_attraction", "use_pole_segmentation", "pole_list",
-	"pole_size_factor",
+	"pole_size_factor", "top_N_nodes",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	// Cosmetic parameters:
@@ -345,6 +345,7 @@ void set_default_args(map<string, string>& map)
 	map["magnetic_pole_separation"] = "10000";
 	map["draw_common_edges"] = "true";
 	map["pole_size_factor"] = "3";
+	map["top_N_nodes"] = "0";
 	// Magnetic force parameters
 	map["use_magnetic_field"] = "false";
 	map["field_type"] = "linear";
@@ -823,6 +824,7 @@ int main(int argc, const char** argv)
 
 	// Load the graph into ForceAtlas2 data structure
 	RPGraph::UGraph graph = RPGraph::UGraph(src, dst, num_of_edges, num_of_nodes, communities, degree_S);
+	cout << "Graph converted to force atlas" << "\n";
 
   	// Find graph modularity
 	uint32_t qm = 0;
@@ -893,6 +895,16 @@ int main(int argc, const char** argv)
 		pole_list_size = 0;
 	int* pole_list = new int[pole_list_size];
 	split_to_int(arg_map["pole_list"], ',', pole_list, pole_list_size);
+	
+	int top_N_nodes = stoi(arg_map["top_N_nodes"]);
+	if (top_N_nodes > 0) {
+		// Replace the pole_list with the top N nodes
+		int* top_nodes = graph.get_top_nodes(top_N_nodes);
+		delete[] pole_list;
+		pole_list = top_nodes;
+		pole_list_size = top_N_nodes;
+		cout << "Top " << top_N_nodes << "in-degree nodes were selected" << "\n";
+	}
 
 	cout << "Pole list: {";
 	for (int i = 0; i < pole_list_size; i++)
@@ -913,6 +925,14 @@ int main(int argc, const char** argv)
 	for (int i = 0; i < pole_list_size; i++)
 		cout << layout.graph.in_degree(layout.graph.node_map[pole_list[i]]) << (i == pole_list_size - 1 ? "" : ",");
 	cout << "}\n";
+
+	// Print pole labels
+	if (node_labels.size() > 0) {
+		cout << "Pole labels: {";
+		for (int i = 0; i < pole_list_size; i++)
+			cout << node_labels[pole_list[i]] << (i == pole_list_size - 1 ? "" : ", ");
+		cout << "}\n";
+	}
 
 	// MAGNETIC FORCE PARAMETERS
 	bool use_magnetic_field = std::string(arg_map["use_magnetic_field"]) == "yes" or std::string(arg_map["use_magnetic_field"]) == "true";

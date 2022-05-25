@@ -85,6 +85,8 @@ namespace RPGraph
 
         std::unordered_map<nid_t, std::unordered_map<nid_t, bool>> initial_edge_direction;
         std::unordered_map<nid_t, std::unordered_map<nid_t, bool>> is_edge_directed;
+
+        int* get_top_nodes(int N);
     };
 
     // Compressed sparserow (CSR) for undirected graphs.

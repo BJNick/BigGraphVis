@@ -179,6 +179,56 @@ namespace RPGraph
         return adjacency_list[nid];
     }
 
+    // Get OG indices of top N nodes with highest degree without sorting 
+    int* UGraph::get_top_nodes(int N)
+    {
+        std::unordered_map<nid_t, nid_t> degrees = this->in_degrees;
+	    int* top_nodes = new int[N];
+        int* top_degrees = new int[N];
+        int i = 0;
+        for(auto it = degrees.begin(); it != degrees.end(); ++it)
+        {
+            if(i < N)
+            {
+                top_nodes[i] = it->first;
+                top_degrees[i] = it->second;
+                i++;
+            }
+            else
+            {
+                if(it->second > top_degrees[N-1])
+                {
+                    top_nodes[N-1] = it->first;
+                    top_degrees[N-1] = it->second;
+                    int indices[N];
+                    for(int j = 0; j < N; j++)
+                        indices[j] = j;
+                    std::sort(indices, indices + N, [top_degrees](int a, int b) { return top_degrees[a] > top_degrees[b]; });
+                    int new_top_nodes[N];
+                    int new_top_degrees[N];
+                    for(int j = 0; j < N; j++)
+                    {
+                        new_top_nodes[j] = top_nodes[indices[j]];
+                        new_top_degrees[j] = top_degrees[indices[j]];
+                    }
+                    for(int j = 0; j < N; j++)
+                    {
+                        top_nodes[j] = new_top_nodes[j];
+                        top_degrees[j] = new_top_degrees[j];
+                    }
+                }
+            }
+        }
+        // Convert all of them using node_map_r
+        for(int i = 0; i < N; i++)
+            top_nodes[i] = node_map_r[top_nodes[i]];
+        /*std::cout << "Top nodes: {";
+        for (int i = 0; i < 10; i++)
+            cout << top_nodes[i] << "," << top_degrees[i] << (i == 10 - 1 ? "" : "|");
+        std::cout << "}\n";*/
+        return top_nodes;
+    }
+
     /* Definitions for CSRUGraph */
 
 // CSRUGraph represents an undirected graph using a
