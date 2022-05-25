@@ -142,7 +142,7 @@ namespace RPGraph
                 continue; // Cannot compute the angle when either is zero
 
             if (use_pole_segmentation && layout.isDisconnected(layout.primary(t, n)))
-                field_direction = field_direction * -1; // Either skip or reverse the direction
+                continue; // Either skip or reverse the direction
 
             Real2DVector force_on_n = magnetic_equation(field_direction, disp, field_strength, c_m, alpha, beta);
             
