@@ -165,7 +165,7 @@ namespace RPGraph
             if (dist == 0.0 || field_direction.magnitude() == 0.0)
                 continue; // Cannot compute the angle when either is zero
 
-            if (use_pole_segmentation && layout.isDisconnected(layout.primary(t, n)))
+            if (pole_list_size>0 && field_type=="negative-charges" && layout.isDisconnected(layout.primary(t, n)))
                 continue; // Either skip or reverse the direction
 
             Real2DVector force_on_n = magnetic_equation(field_direction, disp, field_strength, c_m, alpha, beta);
@@ -258,7 +258,7 @@ namespace RPGraph
                 Real2DVector v = pole_pos - pos;
                 float dist = v.magnitude();
                 float m = 1 / (dist * dist);
-                if (use_pole_segmentation && layout.isConnectedToOneOnly(primary_node)) {
+                if (pole_list_size>0 && layout.isConnectedToOneOnly(primary_node)) {
                     if (layout.isConnectedTo(primary_node, i)) {
                         return (v * m).getNormalizedFinite();
                     }
