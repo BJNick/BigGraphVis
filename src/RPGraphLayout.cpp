@@ -50,6 +50,7 @@ namespace RPGraph
         draw_common_edges = true;
         use_distance_based_edge_direction = false;
         max_influence_distance = -1; // -1 means no limit
+        pole_size_factor = 3;
     }
 
     GraphLayout::~GraphLayout()
@@ -505,7 +506,7 @@ namespace RPGraph
                 if (i == graph.node_map[pole_list[j]])
                 {
                     r = 1.0, g = 0.0, b = 0.0; 
-                    radian = radian * 3;
+                    radian = radian * pole_size_factor;
                     break;
                 }
             

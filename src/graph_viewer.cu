@@ -207,6 +207,7 @@ std::string parameter_keys[num_of_parameters] = {
 	// Pole parameters:
 	"use_distance_based_edge_direction", "magnetic_pole_separation", "draw_common_edges",
 	"max_influence_distance", "pin_poles", "extra_pole_attraction", "use_pole_segmentation", "pole_list",
+	"pole_size_factor",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	// Cosmetic parameters:
@@ -343,6 +344,7 @@ void set_default_args(map<string, string>& map)
 	map["use_pole_segmentation"] = "false";
 	map["magnetic_pole_separation"] = "10000";
 	map["draw_common_edges"] = "true";
+	map["pole_size_factor"] = "3";
 	// Magnetic force parameters
 	map["use_magnetic_field"] = "false";
 	map["field_type"] = "linear";
@@ -881,6 +883,7 @@ int main(int argc, const char** argv)
 	layout.draw_arrows = std::string(arg_map["draw_arrows"]) == "true";
 	layout.min_arrow_length = std::stoi(arg_map["min_arrow_length"]);
 	layout.draw_common_edges = std::string(arg_map["draw_common_edges"]) == "true";
+	layout.pole_size_factor = std::stof(arg_map["pole_size_factor"]);
 
 	// POLES FOR COLORING
 
