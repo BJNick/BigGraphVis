@@ -249,7 +249,8 @@ namespace RPGraph
         ct = 0;
         int sum_track = 0;
         space = sum_degre * .0001;
-        for (auto i : idx)
+        // Do not draw edges twice
+        /*for (auto i : idx)
         {
 
             for (nid_t n2 : graph.neighbors_with_geq_id(i))
@@ -259,7 +260,7 @@ namespace RPGraph
                                       (getX(n2) - minX) * xScale, (getY(n2) - minY) * yScale,
                                       0.08, 0.3, 0.3, 0.3);
             }
-        }
+        }*/
         for (auto i : idx)
         {
             r = double(2) / double(255);
