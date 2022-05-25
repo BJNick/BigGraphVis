@@ -68,16 +68,10 @@ namespace RPGraph
         for(int i=0;i<n;i++)
         {
             if(s[i]<=m&&t[i]<=m)
-                if(communities[s[i]]>0&&communities[s[i]]<m&&communities[t[i]]>0&&communities[t[i]]<m)
-                    if(communities[s[i]] != communities[t[i]]) 
-                        add_edge(communities[s[i]], communities[t[i]],degree_S[communities[s[i]]],degree_S[communities[t[i]]]); 
+                if(communities[s[i]] != communities[t[i]]) 
+                    add_edge(communities[s[i]], communities[t[i]],degree_S[communities[s[i]]],degree_S[communities[t[i]]]); 
            
         }
-       
-        
-        
-        
-        
         
         //*********************************************************************************************************************************************************
     }

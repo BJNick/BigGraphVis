@@ -600,13 +600,20 @@ namespace RPGraph
 
         std::ofstream out_file(path);
 
-        // First output the nodes
-        // The highest node id in node_labels
-        long max_id = 0;
-        for (auto it = node_labels.begin(); it != node_labels.end(); ++it)
-            max_id = std::max(max_id, it->first);
+        // Find min/max reverse id
+        nid_t max_id = 0;
+        nid_t min_id = INT_MAX;
+        for (nid_t n = 0; n < graph.num_nodes(); ++n)
+        {
+            nid_t id = graph.node_map_r[n]; // id as found in edgelist
+            if (id > max_id)
+                max_id = id;
+            if (id < min_id)
+                min_id = id;
+        }
+        int vertex_count = vertex_count = max_id - min_id + 1;
 
-        out_file << "*Vertices " << max_id << "\n";
+        out_file << "*Vertices " << vertex_count << "\n";
 
         for (nid_t n = 0; n < graph.num_nodes(); ++n)
         {
@@ -614,6 +621,8 @@ namespace RPGraph
             std::string label = "";
             if (node_labels.find(id) != node_labels.end())
                 label = '\"' + node_labels[id] + '\"';
+            else 
+                label = '\"' + std::to_string(id) + '\"';
             out_file << id << " " << label << " " << getX(n) << " " << getY(n) << "\n";
         }
 
