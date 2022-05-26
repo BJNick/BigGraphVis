@@ -923,7 +923,7 @@ int main(int argc, const char** argv)
 	layout.max_influence_distance = std::stoi(arg_map["max_influence_distance"]);
 
 	// Print the degree of each pole in pole_list
-	cout << "Pole degrees: {";
+	cout << "Pole in-degrees: {";
 	for (int i = 0; i < pole_list_size; i++)
 		cout << layout.graph.in_degree(layout.graph.node_map[pole_list[i]]) << (i == pole_list_size - 1 ? "" : ",");
 	cout << "}\n";
