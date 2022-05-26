@@ -211,7 +211,7 @@ std::string parameter_keys[num_of_parameters] = {
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	// Cosmetic parameters:
-	"node_alpha", "edge_alpha", "square_coordinates", "draw_arrows", "min_arrow_length",
+	"node_alpha", "edge_alpha", "square_coordinates", "draw_arrows", "min_arrow_length", "colored_fraction",
 }; 
 
 // A helpful method for naming the output files
@@ -360,6 +360,7 @@ void set_default_args(map<string, string>& map)
 	map["square_coordinates"] = "false";
 	map["draw_arrows"] = "false";
 	map["min_arrow_length"] = "50";
+	map["colored_fraction"] = "1";
 }
 
 // Split a string into an array of integers
@@ -886,6 +887,7 @@ int main(int argc, const char** argv)
 	layout.min_arrow_length = std::stoi(arg_map["min_arrow_length"]);
 	layout.draw_common_edges = std::string(arg_map["draw_common_edges"]) == "true";
 	layout.pole_size_factor = std::stof(arg_map["pole_size_factor"]);
+	layout.colored_fraction = std::stof(arg_map["colored_fraction"]);
 
 	// POLES FOR COLORING
 

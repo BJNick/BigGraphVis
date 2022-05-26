@@ -51,6 +51,7 @@ namespace RPGraph
         use_distance_based_edge_direction = false;
         max_influence_distance = -1; // -1 means no limit
         pole_size_factor = 3;
+        colored_fraction = 1;
     }
 
     GraphLayout::~GraphLayout()
@@ -539,7 +540,32 @@ namespace RPGraph
                     continue;
 
                 // Draw a line from node to node
-                layout_png.line_blend((getX(i) - minX) * xScale, (getY(i) - minY) * yScale, (getX(n2) - minX) * xScale, (getY(n2) - minY) * yScale, edge_alpha, r, g, b);
+                if (colored_fraction <= 0.5) {
+                    float distance = sqrt(pow(getX(i) - getX(n2), 2) + pow(getY(i) - getY(n2), 2))*std::min(xScale, yScale);
+                    int edge_dir = getEdgeDirection(i, n2);
+
+                    float third1X = (getX(i)*(1-colored_fraction) + getX(n2)*colored_fraction);
+                    float third1Y = (getY(i)*(1-colored_fraction) + getY(n2)*colored_fraction);
+                    float third2X = (getX(i)*colored_fraction + getX(n2)*(1-colored_fraction));
+                    float third2Y = (getY(i)*colored_fraction + getY(n2)*(1-colored_fraction));
+
+                    double r1 = r, g1 = g, b1 = b;
+                    double r2 = r, g2 = g, b2 = b;
+
+                    if (edge_dir != 0) {
+                        if (edge_dir < 0)
+                            r2 = 0.5, g2 = 0.5, b2 = 0.5;
+                        if (edge_dir > 0)
+                            r1 = 0.5, g1 = 0.5, b1 = 0.5;
+                    }
+                    layout_png.line_blend((getX(i) - minX) * xScale, (getY(i) - minY) * yScale, (third1X - minX) * xScale, (third1Y - minY) * yScale, edge_alpha, r1, g1, b1);
+                    layout_png.line_blend((getX(n2) - minX) * xScale, (getY(n2) - minY) * yScale, (third2X - minX) * xScale, (third2Y - minY) * yScale, edge_alpha, r2, g2, b2);
+                    if (colored_fraction < 0.5)
+                        layout_png.line_blend((third1X - minX) * xScale, (third1Y- minY) * yScale, (third2X - minX) * xScale, (third2Y - minY) * yScale, edge_alpha, 0.5, 0.5, 0.5);
+
+                } else {
+                    layout_png.line_blend((getX(i) - minX) * xScale, (getY(i) - minY) * yScale, (getX(n2) - minX) * xScale, (getY(n2) - minY) * yScale, edge_alpha, r, g, b);
+                }
 
                 if (draw_arrows) {
                     // Draw arrows if the edge is long enough

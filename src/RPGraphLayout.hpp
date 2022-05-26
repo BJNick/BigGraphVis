@@ -81,6 +81,7 @@ namespace RPGraph
         bool use_distance_based_edge_direction;
         int max_influence_distance;
         float pole_size_factor;
+        float colored_fraction;
 
         //std::unordered_set<nid_t> connected_to_poles = std::unordered_set<nid_t>();
         //std::unordered_set<nid_t>* getConnectedToList();
