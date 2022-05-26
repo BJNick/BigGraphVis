@@ -650,8 +650,11 @@ namespace RPGraph
         {
             for (nid_t n2 : graph.neighbors_with_geq_id(n))
             {
-                if (getEdgeDirection(n, n2) == 0)
+                if (getEdgeDirection(n, n2) == 0) {
+                    // Print both directions
                     out_file << graph.node_map_r[n] << " " << graph.node_map_r[n2] << " " << "\n";
+                    out_file << graph.node_map_r[n2] << " " << graph.node_map_r[n] << " " << "\n";
+                }
             }
         }
         
