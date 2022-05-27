@@ -854,9 +854,37 @@ int main(int argc, const char** argv)
 		free(degree_cmt);
 		free(degree_S);
 	}
+
+	// POLES FOR COLORING
+
+	// Convert arg_map["pole_list"] = "12,144,2" to array of ints pole_list[3] = {12, 144, 2}
+	int pole_list_size = std::count(arg_map["pole_list"].begin(), arg_map["pole_list"].end(), ',') + 1;
+	if (arg_map["pole_list"].size() == 0)
+		pole_list_size = 0;
+	int* pole_list = new int[pole_list_size];
+	split_to_int(arg_map["pole_list"], ',', pole_list, pole_list_size);
+	
+	int top_N_nodes = stoi(arg_map["top_N_nodes"]);
+	if (top_N_nodes > 0) {
+		// Replace the pole_list with the top N nodes
+		int* top_nodes = graph.get_top_nodes(top_N_nodes);
+		delete[] pole_list;
+		pole_list = top_nodes;
+		pole_list_size = top_N_nodes;
+		cout << "Top " << top_N_nodes << "in-degree nodes were selected" << "\n";
+	}
+
+	cout << "Pole list: {";
+	for (int i = 0; i < pole_list_size; i++)
+		cout << pole_list[i] << (i == pole_list_size - 1 ? "" : ",");
+	cout << "}\n";
 	
 	// Create the GraphLayout and ForceAtlas2 objects.
 	RPGraph::GraphLayout layout(graph);
+
+	layout.pole_list = pole_list;
+	layout.pole_list_size = pole_list_size;
+	
 	RPGraph::ForceAtlas2* fa2;
 
 	// Choose an appropriate ForceAtlas2 implementation
@@ -889,35 +917,8 @@ int main(int argc, const char** argv)
 	layout.pole_size_factor = std::stof(arg_map["pole_size_factor"]);
 	layout.colored_fraction = std::stof(arg_map["colored_fraction"]);
 
-	// POLES FOR COLORING
-
-	// Convert arg_map["pole_list"] = "12,144,2" to array of ints pole_list[3] = {12, 144, 2}
-	int pole_list_size = std::count(arg_map["pole_list"].begin(), arg_map["pole_list"].end(), ',') + 1;
-	if (arg_map["pole_list"].size() == 0)
-		pole_list_size = 0;
-	int* pole_list = new int[pole_list_size];
-	split_to_int(arg_map["pole_list"], ',', pole_list, pole_list_size);
-	
-	int top_N_nodes = stoi(arg_map["top_N_nodes"]);
-	if (top_N_nodes > 0) {
-		// Replace the pole_list with the top N nodes
-		int* top_nodes = graph.get_top_nodes(top_N_nodes);
-		delete[] pole_list;
-		pole_list = top_nodes;
-		pole_list_size = top_N_nodes;
-		cout << "Top " << top_N_nodes << "in-degree nodes were selected" << "\n";
-	}
-
-	cout << "Pole list: {";
-	for (int i = 0; i < pole_list_size; i++)
-		cout << pole_list[i] << (i == pole_list_size - 1 ? "" : ",");
-	cout << "}\n";
-
 	fa2->pole_list = pole_list;
 	fa2->pole_list_size = pole_list_size;
-
-	layout.pole_list = pole_list;
-	layout.pole_list_size = pole_list_size;
 
 	layout.use_distance_based_edge_direction = std::string(arg_map["use_distance_based_edge_direction"]) == "true";
 	layout.max_influence_distance = std::stoi(arg_map["max_influence_distance"]);
