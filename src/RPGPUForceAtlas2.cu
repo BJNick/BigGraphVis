@@ -233,6 +233,10 @@ namespace RPGraph
         freeGPUMemory();
     }
 
+    float CUDAForceAtlas2::count_misaligned_edges(float threshold) {
+        return 0;
+    }
+
     void CUDAForceAtlas2::doStep(uint32_t *nodemap)
     {
         float pin_radius;

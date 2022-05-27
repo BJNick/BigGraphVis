@@ -1,6 +1,8 @@
 
 using namespace std;
 
+#define _USE_MATH_DEFINES
+
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1032,10 +1034,16 @@ int main(int argc, const char** argv)
 			if (to_string(past_avg_max_force).length() > 10)
 				printf("f = %.1e", past_avg_max_force);
 			else
-				printf("f = %4.2f", past_avg_max_force);
+				printf("f = %7.2f", past_avg_max_force);
 			// Warning about not converging
 			if (past_avg_max_force >= 1e5)
 				printf(" (!)");
+			
+			if (pole_list_size >= 1) {
+				float misaligned = fa2->count_misaligned_edges(M_PI/3);
+				printf(" err = %2.2f%%", 100.0*misaligned);
+			}
+			
 			printf("\n");
 			// If the force is getting closer to 0, it converges
 			if (past_avg_max_force > last_avg_max_force * stof(arg_map["divergence_factor"]) && arg_map["stop_on_divergence"] == "true") {

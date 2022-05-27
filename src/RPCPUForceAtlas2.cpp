@@ -280,6 +280,41 @@ namespace RPGraph
         }
     }
 
+    // Checks if the node is misaligned with the magnetic field
+    bool CPUForceAtlas2::is_misaligned(nid_t n, nid_t t, float threshold) {
+        if (field_type == "" && pole_list_size >= 1) {
+            field_type = "negative-charges";
+        } else if (field_type == "") {
+            return false;
+        }
+        Real2DVector pos_n = layout.getCoordinate(n).toVector();
+        Real2DVector pos_t = layout.getCoordinate(t).toVector();
+        Real2DVector disp = layout.getDistanceVector(n, t);
+        int edge_dir = layout.getEdgeDirection(n, t);
+        Real2DVector field_direction = get_magnetic_field(center_of_mass(n, t), layout.primary(t, n));
+        float angle = field_direction.angleCos(disp*edge_dir);
+        // If angle is greater than PI/2, then the node is misaligned
+        return std::abs(angle) >= threshold;
+    }
+
+    float CPUForceAtlas2::count_misaligned_edges(float threshold) {
+        // Returns fraction of colocated edges that are misaligned
+        int misaligned = 0;
+        int colored = 0;
+        for (nid_t n = 0; n < layout.graph.num_nodes(); ++n) {
+            for (nid_t t : layout.graph.neighbors_with_geq_id(n)) {
+                if (!layout.isConnectedToTwoPoles(layout.primary(t, n)) && !layout.isDisconnected(layout.primary(t, n))) {
+                    colored++;
+                    if (is_misaligned(n, t, threshold)) {
+                        misaligned++;
+                    }
+                }
+            }
+        }
+        //std::cout << "Misaligned: " << misaligned << " Colored: " << colored << std::endl;
+        return ((float) misaligned) / colored;
+    }
+
     void CPUForceAtlas2::apply_electrostatic()
     {
         // TODO: Implement for different field types

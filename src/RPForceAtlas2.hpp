@@ -50,6 +50,8 @@ namespace RPGraph
 
             void setMagneticParameters(std::string field_type, bool bi_directional, float field_strength, float c_m, float alpha, float beta);
 
+            virtual float count_misaligned_edges(float threshold) = 0;
+
             // Additional parameters
             bool pin_2_roots;
             float magetic_pole_separation;

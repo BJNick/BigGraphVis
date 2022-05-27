@@ -37,6 +37,9 @@ namespace RPGraph
         void doStep(uint32_t *nodemap) override;
         void sync_layout() override;
 
+        float count_misaligned_edges(float threshold) override;
+        bool is_misaligned(nid_t n, nid_t t, float threshold);
+
     private:
         Real2DVector *forces, *prev_forces;
         BarnesHutApproximator BH_Approximator;
