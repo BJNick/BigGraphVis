@@ -21,6 +21,8 @@
  ==============================================================================
 */
 
+#define _USE_MATH_DEFINES
+
 #include <stdio.h>
 #include <fstream>
 #include <chrono>
@@ -28,11 +30,23 @@
 #include "time.h"
 #include <cstdio>
 #include <iostream>
+#include <math.h>
 
 #include "RPGPUForceAtlas2.hpp"
 #include "RPBHFA2LaunchParameters.cuh"
 #include "RPBHKernels.cuh"
 #include "RPFA2Kernels.cuh"
+#include <math_constants.h>
+
+__global__
+void PinPolesKernel(int nbodiesd, int npoles, float radius, volatile float2 * __restrict body_posd, volatile int * __restrict poleid)
+{
+    int i = threadIdx.x;
+    if (i >= 0 && i < npoles) {
+        body_posd[poleid[i]].x = cosf(2*CUDART_PI_F*i/npoles)*radius;
+        body_posd[poleid[i]].y = sinf(2*CUDART_PI_F*i/npoles)*radius;
+    }
+}
 
 namespace RPGraph
 {
@@ -52,6 +66,7 @@ namespace RPGraph
         // Host initialization and setup //
         nbodies = layout.graph.num_nodes();
         nedges  = layout.graph.num_edges();
+        npoles = layout.pole_list_size;
 
         body_pos = (float2 *)malloc(sizeof(float2) * layout.graph.num_nodes());
         body_mass = (float *)malloc(sizeof(float) * layout.graph.num_nodes());
@@ -61,6 +76,9 @@ namespace RPGraph
         fy       = (float *)malloc(sizeof(float) * layout.graph.num_nodes());
         fx_prev  = (float *)malloc(sizeof(float) * layout.graph.num_nodes());
         fy_prev  = (float *)malloc(sizeof(float) * layout.graph.num_nodes());
+
+        poleid = (int *)malloc(sizeof(int) * layout.pole_list_size);
+
         for (nid_t n = 0; n < layout.graph.num_nodes(); ++n)
         {
             body_pos[n] = {layout.getX(n), layout.getY(n)};
@@ -69,6 +87,10 @@ namespace RPGraph
             fy[n] = 0.0;
             fx_prev[n] = 0.0;
             fy_prev[n] = 0.0;
+        }
+
+        for (int i = 0; i < layout.pole_list_size; i++) {
+            poleid[i] = layout.graph.node_map[layout.pole_list[i]];
         }
 
         int cur_sources_idx = 0;
@@ -138,6 +160,8 @@ namespace RPGraph
         cudaCatchError(cudaMalloc((void **)&fyl,     sizeof(float) * (nbodies)));
         cudaCatchError(cudaMalloc((void **)&fx_prevl,sizeof(float) * (nbodies)));
         cudaCatchError(cudaMalloc((void **)&fy_prevl,sizeof(float) * (nbodies)));
+        
+        cudaCatchError(cudaMalloc((void **)&poleidl, sizeof(int) * npoles));
 
         // Used for reduction in BoundingBoxKernel
         cudaCatchError(cudaMalloc((void **)&maxxl,   sizeof(float) * mp_count * FACTOR1));
@@ -160,6 +184,8 @@ namespace RPGraph
         cudaCatchError(cudaMemcpy(fyl, fy,           sizeof(float) * nbodies, cudaMemcpyHostToDevice));
         cudaCatchError(cudaMemcpy(fx_prevl, fx_prev, sizeof(float) * nbodies, cudaMemcpyHostToDevice));
         cudaCatchError(cudaMemcpy(fy_prevl, fy_prev, sizeof(float) * nbodies, cudaMemcpyHostToDevice));
+        
+        cudaCatchError(cudaMemcpy(poleidl, poleid, sizeof(int) * npoles, cudaMemcpyHostToDevice));
     }
 
     void CUDAForceAtlas2::freeGPUMemory()
@@ -175,6 +201,8 @@ namespace RPGraph
         cudaFree(countl);
         cudaFree(startl);
         cudaFree(sortl);
+
+        cudaFree(poleidl);
 
         cudaFree(fxl);
         cudaFree(fx_prevl);
@@ -200,12 +228,20 @@ namespace RPGraph
         free(fy);
         free(fx_prev);
         free(fy_prev);
+        free(poleid);
 
         freeGPUMemory();
     }
 
     void CUDAForceAtlas2::doStep(uint32_t *nodemap)
     {
+        float pin_radius;
+
+        if (pin_poles && pole_list_size >= 2) {
+            pin_radius = magetic_pole_separation / (2*sin(M_PI/pole_list_size));
+            PinPolesKernel<<<1, pole_list_size>>>(nbodies, pole_list_size, pin_radius, body_posl, poleidl);
+        }
+
         GravityKernel<<<mp_count * FACTOR6, THREADS6>>>(nbodies, k_g, strong_gravity, body_massl, body_posl, fxl, fyl);
 
         AttractiveForceKernel<<<mp_count * FACTOR6, THREADS6>>>(nedges, body_posl, fxl, fyl, sourcesl, targetsl,nodemap);
@@ -231,6 +267,10 @@ namespace RPGraph
         SpeedKernel<<<mp_count * FACTOR1, THREADS1>>>(nbodies, fxl, fyl, fx_prevl, fy_prevl, body_massl, swgl, etral);
 
         DisplacementKernel<<<mp_count * FACTOR6, THREADS6>>>(nbodies, body_posl, fxl, fyl, fx_prevl, fy_prevl);
+
+        if (pin_poles && pole_list_size >= 2) {
+            PinPolesKernel<<<1, pole_list_size>>>(nbodies, pole_list_size, pin_radius, body_posl, poleidl);
+        }
 
         cudaCatchError(cudaDeviceSynchronize());
         iteration++;

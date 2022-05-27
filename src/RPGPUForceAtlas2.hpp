@@ -25,6 +25,11 @@
 #define RPGPUForceAtlas2_hpp
 #include "RPForceAtlas2.hpp"
 
+__global__
+void PinPolesKernel(int nbodiesd, int npoles, float radius, 
+                        volatile float2 * __restrict body_posd, 
+                        volatile int * __restrict poleid);
+
 namespace RPGraph
 {
     class CUDAForceAtlas2: public ForceAtlas2
@@ -55,16 +60,23 @@ namespace RPGraph
         float *fxl, *fyl, *fx_prevl, *fy_prevl;
         float *swgl, *etral;
 
+        int *poleid, *poleidl;
+
         int mp_count; // Number of multiprocessors on GPU.
         int max_threads_per_block;
         int nnodes;
         int nbodies;
         int nedges;
 
+        int npoles;
+
         void sendGraphToGPU();
         void sendLayoutToGPU();
         void retrieveLayoutFromGPU();
         void freeGPUMemory();
+
+        // New helper methods
+        void pinRoots(float2 *body_posl);
     };
 };
 

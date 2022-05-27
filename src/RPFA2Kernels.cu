@@ -92,7 +92,10 @@ void AttractiveForceKernel(int nedgesd,
         const float dy = body_posd[target].y-body_posd[source].y;
         //***************
 
-
+        // What I need to implement segmentation:
+        // Connected-to array: isConnectedToTwoPoles/isConnectedToOneOnly/isDisconnected USE THE ONE BELOW
+        // Closest pole ID array: closestPoleID SIGNED CHAR (-127 to 127)
+        // Distance to closest pole array: distanceToClosestPole UNSIGNED CHAR (0-255)
         
         //******************
 
