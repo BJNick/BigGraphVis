@@ -200,7 +200,7 @@ const int num_of_parameters = 60; // arbitrary number
 std::string parameter_keys[num_of_parameters] = {
 	// ForceAtlas2 parameters:
 	"program_call", "cuda_requested", "max_iterations", "num_screenshots", "strong_gravity", "scale", "gravity", "approximate",
-	"in_path", "out_path", "out_format", "image_w", "image_h", "degree_threshold", "rounds", "huenumber",
+	"in_path", "out_path", "out_format", "image_w", "image_h", "degree_threshold", "rounds", "huenumber", "use_linlog",
 	// Configuration file parameters:
 	"config_folder", "config_chain", "chain_output_name", "chain_separator", "include_timestamp",
 	// Extra parameters:
@@ -320,6 +320,7 @@ void set_default_args(map<string, string>& map)
 	map["degree_threshold"] = "11";
 	map["rounds"] = "5";
 	map["huenumber"] = "6500";
+	map["use_linlog"] = "false";
 	// Configuration file parameters
 	map["config_folder"] = "../../../config/";
 	map["config_chain"] = "";
@@ -901,6 +902,8 @@ int main(int argc, const char** argv)
 									  strong_gravity, gravity, scale);
 
 	// FA 2 parameters
+	fa2->use_linlog = std::string(arg_map["use_linlog"]) == "true";
+
 	fa2->attraction_exponent = std::stof(arg_map["attraction_exponent"]);
 	fa2->k_attraction = std::stof(arg_map["attraction"]);
 	fa2->pin_2_roots = std::string(arg_map["pin_2_roots"]) == "true";
