@@ -271,6 +271,8 @@ void read_args_from_file(string file_path, map<string, string>& map)
 			key.erase(remove_if(key.begin(), key.end(), ::isspace), key.end());
 			if (key.empty())
 				continue;
+			if (key == "BREAK" || key == "break")
+				break;
 			// Make sure the key is in the list of keys
 			bool found = (std::find(parameter_keys, parameter_keys + num_of_parameters, key) != parameter_keys + num_of_parameters);
 			if (!found)
