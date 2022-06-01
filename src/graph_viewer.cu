@@ -1067,6 +1067,11 @@ int main(int argc, const char** argv)
 		}
 	}
 
+	if (pole_list_size >= 1) {
+		float misaligned = fa2->count_misaligned_edges(M_PI/3);
+		printf("Final err = %2.2f%%\n", 100.0*misaligned);
+	}
+
 	delete fa2;
 
 	// Print out the total execution time
