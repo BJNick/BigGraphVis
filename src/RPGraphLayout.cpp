@@ -826,7 +826,7 @@ namespace RPGraph
         else if (isConnectedTo(n, 6))
             r = 0.2, g = 0.75, b = 0.58; // teal
         else if (isConnectedTo(n, 7))
-            r = 0.65, g = 0, b = 0; // dark red
+            r = 0.53, g = 0, b = 0.16; // maroon
         else if (isConnectedTo(n, 8))
             r = 0, g = 0.41, b = 0.07;  // dark green
         else if (isConnectedTo(n, 9))
