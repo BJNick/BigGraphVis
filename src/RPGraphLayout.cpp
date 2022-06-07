@@ -814,23 +814,23 @@ namespace RPGraph
         else if (isConnectedTo(n, 0))
             r = 1.0, g = 0.5, b = 0.0; // orange
         else if (isConnectedTo(n, 1))
-            r = 0.0, g = 0.65, b = 0.93; // blue
+            r = 0.0, g = 0.65, b = 0.93; // sky blue
         else if (isConnectedTo(n, 2))
             r = 0.85, g = 0.39, b = 0.6; // pink
         else if (isConnectedTo(n, 3))
-            r = 0.5, g = 0.72, b = 0;  // green
+            r = 0.5, g = 0.72, b = 0;  // lime
         else if (isConnectedTo(n, 4))
-            r = 0.2, g = 0, b = 0.60;  // purple
+            r = 0.14, g = 0, b = 0.68;  // navy
         else if (isConnectedTo(n, 5))
-            r = 0.53, g = 0.36, b = 0.0; // dark orange
+            r = 0.53, g = 0.36, b = 0.0; // brown
         else if (isConnectedTo(n, 6))
-            r = 0, g = 0.28, b = 0.53; // dark blue
+            r = 0.2, g = 0.75, b = 0.58; // teal
         else if (isConnectedTo(n, 7))
-            r = 0.53, g = 0, b = 0.16; // dark pink
+            r = 0.53, g = 0, b = 0.16; // maroon
         else if (isConnectedTo(n, 8))
-            r = 0, g = 0.53, b = 0.09;  // dark green
+            r = 0, g = 0.41, b = 0.07;  // dark green
         else if (isConnectedTo(n, 9))
-            r = 0.5, g = 0, b = 0.53;  // dark purple
+            r = 0.67, g = 0, b = 0.64;  // purple
         else if (isConnectedToOneOnly(n))
             r = 1.0, g = 0.0, b = 0.0; // red for all other nodes
         // If not connected to either, set to black
