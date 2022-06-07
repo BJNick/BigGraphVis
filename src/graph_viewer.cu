@@ -209,11 +209,13 @@ std::string parameter_keys[num_of_parameters] = {
 	// Pole parameters:
 	"use_distance_based_edge_direction", "magnetic_pole_separation", "draw_common_edges",
 	"max_influence_distance", "pin_poles", "extra_pole_attraction", "use_pole_segmentation", "pole_list",
-	"pole_size_factor", "top_N_nodes",
+	"pole_size_factor", "top_N_nodes", "pole_gravity_factor",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
+	"legacy_segmentation",
 	// Cosmetic parameters:
 	"node_alpha", "edge_alpha", "square_coordinates", "draw_arrows", "min_arrow_length", "colored_fraction",
+	"hide_iteration_output",
 }; 
 
 // A helpful method for naming the output files
@@ -351,6 +353,8 @@ void set_default_args(map<string, string>& map)
 	map["draw_common_edges"] = "true";
 	map["pole_size_factor"] = "3";
 	map["top_N_nodes"] = "0";
+	map["pole_gravity_factor"] = "0";
+	map["legacy_segmentation"] = "false";
 	// Magnetic force parameters
 	map["use_magnetic_field"] = "false";
 	map["field_type"] = "linear";
@@ -366,6 +370,7 @@ void set_default_args(map<string, string>& map)
 	map["draw_arrows"] = "false";
 	map["min_arrow_length"] = "50";
 	map["colored_fraction"] = "1";
+	map["hide_iteration_output"] = "false";
 }
 
 // Split a string into an array of integers
@@ -914,6 +919,8 @@ int main(int argc, const char** argv)
 	fa2->use_pole_segmentation = std::string(arg_map["use_pole_segmentation"]) == "true";
 	fa2->pin_poles = std::string(arg_map["pin_poles"]) == "true";
 	fa2->extra_pole_attraction = std::stof(arg_map["extra_pole_attraction"]);
+	fa2->pole_gravity_factor = std::stof(arg_map["pole_gravity_factor"]);
+	fa2->legacy_segmentation = std::string(arg_map["legacy_segmentation"]) == "true";
 
 	// COSMETIC PARAMETERS
 	layout.setAlphaParameters(std::stof(arg_map["node_alpha"]), std::stof(arg_map["edge_alpha"]));
@@ -1026,11 +1033,12 @@ int main(int argc, const char** argv)
 		// If we need to, write the result to a png
 		if (num_screenshots > 0 && (iteration % snap_period == 0 || iteration == max_iterations))
 		{
-			printf("Starting iteration %3d (%3.0f%%), ", iteration, 100 * (float)iteration / max_iterations);
+			if (arg_map["hide_iteration_output"] != "true")
+				printf("Starting iteration %3d (%3.0f%%), ", iteration, 100 * (float)iteration / max_iterations);
 			saveScreenshot(iteration);
 		}
 		// Print out the iteration progress
-		else if (iteration % print_period == 0)
+		else if (iteration % print_period == 0 && arg_map["hide_iteration_output"] != "true")
 		{
 			printf("Starting iteration %3d (%3.0f%%), ", iteration, 100 * (float)iteration / max_iterations);
 			// Print out max force during the last iteration

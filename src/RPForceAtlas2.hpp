@@ -61,6 +61,8 @@ namespace RPGraph
             int* pole_list;
             int pole_list_size;
             bool pin_poles;
+            float pole_gravity_factor;
+            bool legacy_segmentation;
 
         protected:
             int iteration;

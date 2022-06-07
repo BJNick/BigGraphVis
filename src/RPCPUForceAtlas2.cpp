@@ -168,6 +168,9 @@ namespace RPGraph
             if (pole_list_size>0 && field_type=="negative-charges" && layout.isDisconnected(layout.primary(t, n)))
                 continue; // Either skip or reverse the direction
 
+            if (pole_list_size>0 && field_type=="negative-charges" && layout.isConnectedToTwoPoles(layout.primary(t, n)) && !legacy_segmentation)
+                continue; // Either skip or reverse the direction
+
             Real2DVector force_on_n = magnetic_equation(field_direction, disp, field_strength, c_m, alpha, beta);
             
             Real2DVector force_on_t = force_on_n * -1;
@@ -392,8 +395,20 @@ namespace RPGraph
         {
             f_g = k_g*mass(n) / d; 
         }
-
+        // Regular gravity
         forces[n] += (Real2DVector(-layout.getX(n), -layout.getY(n)) * f_g);
+
+        if (pole_gravity_factor > 0 && layout.isConnectedToOneOnly(n))
+        {
+            Real2DVector p = layout.getCoordinate(n).toVector() * (-1); // MOVE TO THE INNER IF
+            // Gravitate towards the poles 
+            int pole, distance;
+            layout.getClosestPole(n, pole, distance);
+            if (pole >= 0 && distance != 0) {
+                p = layout.getCoordinate(layout.graph.node_map[layout.pole_list[pole]]).toVector() - layout.getCoordinate(n).toVector();
+                forces[n] += p * f_g * pole_gravity_factor; // Both: k_g * pole_gravity_factor
+            }
+        }
     }
 
     // Eq. (8)
