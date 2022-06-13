@@ -451,14 +451,16 @@ void read_data_from_file(string in_path, uint32_t* src, uint32_t* dst, uint32_t*
 			// Split the string using quotes as delimiter
 			std::stringstream ss(line);
 			std::string token;
-			int i = 0;
 			// if line contains double quotes, split using double quotes
 			if (line.find("\"") != std::string::npos) {
+				int i = 0;
 				while (getline(ss, token, '\"')) {
+					std::cout << token << std::endl;
 					if (i == 0) {
 						node_id = stol(token);
 					} else if (i == 1) {
 						node_label = token;
+						break;
 					}
 					i++;
 				}
