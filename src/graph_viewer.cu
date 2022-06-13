@@ -212,7 +212,7 @@ std::string parameter_keys[num_of_parameters] = {
 	"pole_size_factor", "top_N_nodes", "pole_gravity_factor",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
-	"legacy_segmentation",
+	"legacy_segmentation", "simple_center_of_mass",
 	// Cosmetic parameters:
 	"node_alpha", "edge_alpha", "square_coordinates", "draw_arrows", "min_arrow_length", "colored_fraction",
 	"hide_iteration_output",
@@ -363,6 +363,7 @@ void set_default_args(map<string, string>& map)
 	map["magnetic_constant"] = "1";
 	map["magnetic_alpha"] = "1";
 	map["magnetic_beta"] = "1";
+	map["simple_center_of_mass"] = "false";
 	// Cosmetic parameters
 	map["node_alpha"] = "0.8";
 	map["edge_alpha"] = "0.005";
@@ -921,6 +922,7 @@ int main(int argc, const char** argv)
 	fa2->extra_pole_attraction = std::stof(arg_map["extra_pole_attraction"]);
 	fa2->pole_gravity_factor = std::stof(arg_map["pole_gravity_factor"]);
 	fa2->legacy_segmentation = std::string(arg_map["legacy_segmentation"]) == "true";
+	fa2->simple_center_of_mass = std::string(arg_map["simple_center_of_mass"]) == "true";
 
 	// COSMETIC PARAMETERS
 	layout.setAlphaParameters(std::stof(arg_map["node_alpha"]), std::stof(arg_map["edge_alpha"]));

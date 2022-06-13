@@ -63,6 +63,7 @@ namespace RPGraph
             bool pin_poles;
             float pole_gravity_factor;
             bool legacy_segmentation;
+            bool simple_center_of_mass;
 
         protected:
             int iteration;

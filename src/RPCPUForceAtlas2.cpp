@@ -178,8 +178,13 @@ namespace RPGraph
             //if (field_type == "negative-charges" && layout.isConnectedToOneOnly(layout.primary(t, n)))
             //    force_on_t = force_on_t * 4; 
 
-            Real2DVector accel_on_n = force_on_n / mass(n);
-            Real2DVector accel_on_t = force_on_t / mass(t);
+            Real2DVector accel_on_n = force_on_n;
+            Real2DVector accel_on_t = force_on_t;
+            
+            if (!simple_center_of_mass) {
+                accel_on_n = force_on_n / mass(n);
+                accel_on_t = force_on_t / mass(t);
+            }
 
             f += accel_on_n;
             forces[t] += accel_on_t;
@@ -197,6 +202,8 @@ namespace RPGraph
     {
         Real2DVector pos_n = layout.getCoordinate(n).toVector();
         Real2DVector pos_t = layout.getCoordinate(t).toVector();
+        if (simple_center_of_mass)
+            return (pos_n + pos_t) * 0.5;
         float mass_n = mass(n) == 0 ? 1 : mass(n);
         float mass_t = mass(t) == 0 ? 1 : mass(t);
         float one_over_total_mass = 1 / (mass_n + mass_t);
