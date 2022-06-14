@@ -165,18 +165,9 @@ namespace RPGraph
             if (dist == 0.0 || field_direction.magnitude() == 0.0)
                 continue; // Cannot compute the angle when either is zero
 
-            if (pole_list_size>0 && field_type=="negative-charges" && layout.isDisconnected(layout.primary(t, n)))
-                continue; // Either skip or reverse the direction
-
-            if (pole_list_size>0 && field_type=="negative-charges" && layout.isConnectedToTwoPoles(layout.primary(t, n)) && !legacy_segmentation)
-                continue; // Either skip or reverse the direction
-
             Real2DVector force_on_n = magnetic_equation(field_direction, disp, field_strength, c_m, alpha, beta);
             
             Real2DVector force_on_t = force_on_n * -1;
-
-            //if (field_type == "negative-charges" && layout.isConnectedToOneOnly(layout.primary(t, n)))
-            //    force_on_t = force_on_t * 4; 
 
             Real2DVector accel_on_n = force_on_n;
             Real2DVector accel_on_t = force_on_t;
@@ -260,22 +251,30 @@ namespace RPGraph
                 return (v1 * m1 + v2 * m2).getNormalizedFinite();
             }
         } else if (field_type == "negative-charges") {
-            // Multiple negative charges
-            Real2DVector total_f = Real2DVector(0, 0);
-            for (int i = 0; i < pole_list_size; i++) {
-                nid_t pole_id = layout.graph.node_map[pole_list[i]];
+            // Apply no force on nodes that are disconnected or connected to more than one pole
+            if (pole_list_size>0 && layout.isConnectedToOneOnly(primary_node)) {
+                int pole, distance;
+                layout.getClosestPole(primary_node, pole, distance);
+
+                nid_t pole_id = layout.graph.node_map[pole_list[pole]];
                 Real2DVector pole_pos = layout.getCoordinate(pole_id).toVector();
                 Real2DVector v = pole_pos - pos;
                 float dist = v.magnitude();
-                float m = 1 / (dist * dist);
-                if (pole_list_size>0 && layout.isConnectedToOneOnly(primary_node)) {
-                    if (layout.isConnectedTo(primary_node, i)) {
-                        return (v * m).getNormalizedFinite();
-                    }
-                }
-                total_f += v * m;
+                float m = 1 / (dist * dist); // TODO: Remove this multiplier as it does not affect the direction 
+                return (v * m).getNormalizedFinite();
             }
-            return total_f.getNormalizedFinite();
+            return Real2DVector(0, 0);
+        } else if (field_type == "linear-pull") {
+            // Apply no force on nodes that are disconnected or connected to more than one pole
+            if (pole_list_size>0 && layout.isConnectedToOneOnly(primary_node)) {
+                int pole, distance;
+                layout.getClosestPole(primary_node, pole, distance);
+
+                nid_t pole_id = layout.graph.node_map[pole_list[pole]];
+                Real2DVector pole_pos = layout.getCoordinate(pole_id).toVector();
+                return pole_pos.getNormalizedFinite();
+            }
+            return Real2DVector(0, 0);
         } else if (field_type == "linear-dipole") {
             // Looks like: <-<-<- | ->->-> | <-<-<- 
             if (pos.x < pole1.x) {
@@ -327,8 +326,8 @@ namespace RPGraph
 
     void CPUForceAtlas2::apply_electrostatic()
     {
-        // TODO: Implement for different field types
-        if (field_type != "negative-charges" || use_magnetic_field == false) {
+        // TODO: Remove negative-charges check (it's there for backwards compatibility)
+        if (!repel_poles && (field_type != "negative-charges" || use_magnetic_field == false)) {
             return;
         }
         // Iterate over pole_list of length pole_list_size

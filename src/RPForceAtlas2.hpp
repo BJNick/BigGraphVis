@@ -64,6 +64,7 @@ namespace RPGraph
             float pole_gravity_factor;
             bool legacy_segmentation;
             bool simple_center_of_mass;
+            bool repel_poles;
 
         protected:
             int iteration;
