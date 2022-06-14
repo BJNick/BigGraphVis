@@ -195,7 +195,7 @@ void find_degree_S(int num_of_edges, int num_of_nodes, uint32_t* communities, ui
 
 //============================================================
 
-const int num_of_parameters = 60; // arbitrary number
+const int num_of_parameters = 70; // arbitrary number
 
 std::string parameter_keys[num_of_parameters] = {
 	// ForceAtlas2 parameters:
@@ -209,7 +209,7 @@ std::string parameter_keys[num_of_parameters] = {
 	// Pole parameters:
 	"use_distance_based_edge_direction", "magnetic_pole_separation", "draw_common_edges",
 	"max_influence_distance", "pin_poles", "extra_pole_attraction", "use_pole_segmentation", "pole_list",
-	"pole_size_factor", "top_N_nodes", "pole_gravity_factor", "repel_poles",
+	"pole_size_factor", "top_N_nodes", "pole_gravity_factor", "repel_poles", "soft_pin_factor", "circle_pull_factor",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	"legacy_segmentation", "simple_center_of_mass",
@@ -356,6 +356,8 @@ void set_default_args(map<string, string>& map)
 	map["pole_gravity_factor"] = "0";
 	map["legacy_segmentation"] = "false";
 	map["repel_poles"] = "false";
+	map["soft_pin_factor"] = "0";
+	map["circle_pull_factor"] = "0";
 	// Magnetic force parameters
 	map["use_magnetic_field"] = "false";
 	map["field_type"] = "linear";
@@ -926,6 +928,8 @@ int main(int argc, const char** argv)
 	fa2->legacy_segmentation = std::string(arg_map["legacy_segmentation"]) == "true";
 	fa2->simple_center_of_mass = std::string(arg_map["simple_center_of_mass"]) == "true";
 	fa2->repel_poles = std::string(arg_map["repel_poles"]) == "true";
+	fa2->soft_pin_factor = std::stof(arg_map["soft_pin_factor"]);
+	fa2->circle_pull_factor = std::stof(arg_map["circle_pull_factor"]);
 
 	// COSMETIC PARAMETERS
 	layout.setAlphaParameters(std::stof(arg_map["node_alpha"]), std::stof(arg_map["edge_alpha"]));

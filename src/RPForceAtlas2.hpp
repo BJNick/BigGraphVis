@@ -65,6 +65,7 @@ namespace RPGraph
             bool legacy_segmentation;
             bool simple_center_of_mass;
             bool repel_poles;
+            float soft_pin_factor, circle_pull_factor;
 
         protected:
             int iteration;

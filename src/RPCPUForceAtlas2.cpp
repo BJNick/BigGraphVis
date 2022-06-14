@@ -358,6 +358,14 @@ namespace RPGraph
                 forces[t] += f * -1;
                 forces[n] += f;
             }
+
+            // Apply radial force away from the origin on the poles (circle pull)
+            if (circle_pull_factor > 0) {
+                float dist = layout.getCoordinate(n).toVector().magnitude();
+                float radius = 0, y = 0;
+                getPinPos(0, radius, y);
+                forces[n] += layout.getCoordinate(n).toVector().getNormalized() * (radius - dist) * circle_pull_factor;
+            }
         }
     }
 
@@ -406,13 +414,25 @@ namespace RPGraph
 
         if (pole_gravity_factor > 0 && layout.isConnectedToOneOnly(n))
         {
-            Real2DVector p = layout.getCoordinate(n).toVector() * (-1); // MOVE TO THE INNER IF
             // Gravitate towards the poles 
             int pole, distance;
             layout.getClosestPole(n, pole, distance);
             if (pole >= 0 && distance != 0) {
-                p = layout.getCoordinate(layout.graph.node_map[layout.pole_list[pole]]).toVector() - layout.getCoordinate(n).toVector();
+                Real2DVector p = layout.getCoordinate(layout.graph.node_map[layout.pole_list[pole]]).toVector() - layout.getCoordinate(n).toVector();
                 forces[n] += p * f_g * pole_gravity_factor; // Both: k_g * pole_gravity_factor
+            }
+        }
+
+        if(soft_pin_factor > 0 && layout.isConnectedToOneOnly(n))
+        {
+            // Gravitate poles towards the circle pins 
+            int pole, distance;
+            layout.getClosestPole(n, pole, distance);
+            if (pole >= 0 && distance == 0) {
+                float px, py;
+                getPinPos(pole, px, py);
+                Real2DVector p = Real2DVector(px, py) - layout.getCoordinate(n).toVector();
+                forces[n] += p * f_g * soft_pin_factor;
             }
         }
     }
@@ -520,24 +540,23 @@ namespace RPGraph
 
     void CPUForceAtlas2::pinRoots() 
     {
-        if (pin_2_roots) {
-            nid_t r1 = layout.graph.node_map[1];
-            nid_t r2 = layout.graph.node_map[layout.graph.num_nodes()];
-            if (pole_list_size >= 2) {
-                r1 = layout.graph.node_map[pole_list[0]];
-                r2 = layout.graph.node_map[pole_list[1]];
-            }
-            layout.setX(r1, -magetic_pole_separation/2);
-            layout.setY(r1, 0);
-            layout.setX(r2, magetic_pole_separation/2);
-            layout.setY(r2, 0);
-        } else if (pin_poles && pole_list_size >= 2) {
+        if (!pin_2_roots && !pin_poles) return;
+        for (int i = 0; i < pole_list_size; i++) {
+            nid_t n = layout.graph.node_map[pole_list[i]];
+            float px, py;
+            getPinPos(i, px, py);
+            layout.setX(n, px);
+            layout.setY(n, py);
+        }
+    }
+
+    void CPUForceAtlas2::getPinPos(int pole, float& x, float& y)
+    {
+        x = 0, y = 0;
+        if (pole_list_size >= 2) {
             float radius = magetic_pole_separation / (2*sin(M_PI/pole_list_size));
-            for (int i = 0; i < pole_list_size; i++) {
-                nid_t n = layout.graph.node_map[pole_list[i]];
-                layout.setX(n, cos(2*M_PI*i/pole_list_size)*radius);
-                layout.setY(n, sin(2*M_PI*i/pole_list_size)*radius);
-            }
+            x = cos(2*M_PI*pole/pole_list_size)*radius;
+            y = sin(2*M_PI*pole/pole_list_size)*radius;
         }
     }
 

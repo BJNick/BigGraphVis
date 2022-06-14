@@ -70,6 +70,8 @@ namespace RPGraph
         legacy_segmentation = false;
         simple_center_of_mass = false;
         repel_poles = false;
+        soft_pin_factor = 0;
+        circle_pull_factor = 0;
     }
 
     ForceAtlas2::~ForceAtlas2(){};
