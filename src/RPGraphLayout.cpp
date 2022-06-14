@@ -52,6 +52,7 @@ namespace RPGraph
         max_influence_distance = -1; // -1 means no limit
         pole_size_factor = 3;
         colored_fraction = 1;
+        predraw_edges = false;
     }
 
     GraphLayout::~GraphLayout()
@@ -250,18 +251,19 @@ namespace RPGraph
         ct = 0;
         int sum_track = 0;
         space = sum_degre * .0001;
-        // Do not draw edges twice
-        /*for (auto i : idx)
-        {
-
-            for (nid_t n2 : graph.neighbors_with_geq_id(i))
+        // Do not draw edges twice if not necessary
+        if (predraw_edges)
+            for (auto i : idx)
             {
-                // ... and edge.
-                layout_png.line_blend((getX(i) - minX) * xScale, (getY(i) - minY) * yScale,
-                                      (getX(n2) - minX) * xScale, (getY(n2) - minY) * yScale,
-                                      0.08, 0.3, 0.3, 0.3);
+
+                for (nid_t n2 : graph.neighbors_with_geq_id(i))
+                {
+                    // ... and edge.
+                    layout_png.line_blend((getX(i) - minX) * xScale, (getY(i) - minY) * yScale,
+                                        (getX(n2) - minX) * xScale, (getY(n2) - minY) * yScale,
+                                        0.08, 0.3, 0.3, 0.3);
+                }
             }
-        }*/
         for (auto i : idx)
         {
             r = double(2) / double(255);

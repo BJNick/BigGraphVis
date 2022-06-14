@@ -77,6 +77,7 @@ namespace RPGraph
         int* pole_list;
         int pole_list_size;
         bool draw_common_edges;
+        bool predraw_edges;
 
         bool use_distance_based_edge_direction;
         int max_influence_distance;

@@ -215,7 +215,7 @@ std::string parameter_keys[num_of_parameters] = {
 	"legacy_segmentation", "simple_center_of_mass",
 	// Cosmetic parameters:
 	"node_alpha", "edge_alpha", "square_coordinates", "draw_arrows", "min_arrow_length", "colored_fraction",
-	"hide_iteration_output",
+	"hide_iteration_output", "predraw_edges",
 }; 
 
 // A helpful method for naming the output files
@@ -375,6 +375,7 @@ void set_default_args(map<string, string>& map)
 	map["min_arrow_length"] = "50";
 	map["colored_fraction"] = "1";
 	map["hide_iteration_output"] = "false";
+	map["predraw_edges"] = "false";
 }
 
 // Split a string into an array of integers
@@ -413,7 +414,7 @@ void read_data_from_file(string in_path, uint32_t* src, uint32_t* dst, uint32_t*
 	}
 	inFile.open(in_path);
 	std::string line;
-	int edge_id = 0;
+	long edge_id = 0;
 	bool edge_mode = true;
 	bool vertex_mode = false;
 	while (getline(inFile, line)) {
@@ -493,7 +494,7 @@ void read_node_edge_counts(string in_path, uint32_t& num_of_nodes, uint32_t& num
 	bool vertex_mode = false;
 	num_of_nodes = 0;
 	num_of_edges = 0;
-	uint16_t max_node_id = 0;
+	long max_node_id = 0;
 	while (getline(inFile, line)) {
 		// if line starts with a *, check if it says *Edges or *Arcs
 		if (line[0] == '*') {
@@ -939,6 +940,7 @@ int main(int argc, const char** argv)
 	layout.draw_common_edges = std::string(arg_map["draw_common_edges"]) == "true";
 	layout.pole_size_factor = std::stof(arg_map["pole_size_factor"]);
 	layout.colored_fraction = std::stof(arg_map["colored_fraction"]);
+	layout.predraw_edges = std::string(arg_map["predraw_edges"]) == "true";
 
 	fa2->pole_list = pole_list;
 	fa2->pole_list_size = pole_list_size;
