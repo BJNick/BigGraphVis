@@ -65,7 +65,7 @@ namespace RPGraph
     {
         const float dx = (x - to.x)*(x - to.x);
         const float dy = (y - to.y)*(y - to.y);
-        return std::sqrt(dx*dx + dy*dy);
+        return std::sqrt(dx + dy);
     }
 
     // Various operators on Real2DVector
