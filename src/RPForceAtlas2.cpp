@@ -72,6 +72,8 @@ namespace RPGraph
         repel_poles = false;
         soft_pin_factor = 0;
         circle_pull_factor = 0;
+        hierarchy_radius = 2500;
+        hierarchy_force = 0;
     }
 
     ForceAtlas2::~ForceAtlas2(){};

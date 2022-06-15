@@ -210,6 +210,7 @@ std::string parameter_keys[num_of_parameters] = {
 	"use_distance_based_edge_direction", "magnetic_pole_separation", "draw_common_edges",
 	"max_influence_distance", "pin_poles", "extra_pole_attraction", "use_pole_segmentation", "pole_list",
 	"pole_size_factor", "top_N_nodes", "pole_gravity_factor", "repel_poles", "soft_pin_factor", "circle_pull_factor",
+	"hierarchy_radius", "hierarchy_force",
 	// Magnetic field parameters:
 	"use_magnetic_field", "field_type", "bi_directional", "field_strength", "magnetic_constant", "magnetic_alpha", "magnetic_beta",
 	"legacy_segmentation", "simple_center_of_mass",
@@ -358,6 +359,8 @@ void set_default_args(map<string, string>& map)
 	map["repel_poles"] = "false";
 	map["soft_pin_factor"] = "0";
 	map["circle_pull_factor"] = "0";
+	map["hierarchy_radius"] = "2500";
+	map["hierarchy_force"] = "0";
 	// Magnetic force parameters
 	map["use_magnetic_field"] = "false";
 	map["field_type"] = "linear";
@@ -931,6 +934,8 @@ int main(int argc, const char** argv)
 	fa2->repel_poles = std::string(arg_map["repel_poles"]) == "true";
 	fa2->soft_pin_factor = std::stof(arg_map["soft_pin_factor"]);
 	fa2->circle_pull_factor = std::stof(arg_map["circle_pull_factor"]);
+	fa2->hierarchy_radius = std::stof(arg_map["hierarchy_radius"]);
+	fa2->hierarchy_force = std::stof(arg_map["hierarchy_force"]);
 
 	// COSMETIC PARAMETERS
 	layout.setAlphaParameters(std::stof(arg_map["node_alpha"]), std::stof(arg_map["edge_alpha"]));

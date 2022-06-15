@@ -369,6 +369,27 @@ namespace RPGraph
         }
     }
 
+    void CPUForceAtlas2::apply_circular_hierarchy(nid_t n) {
+        // Apply circular hierarchy force on node n based on hop distance from the pole
+        if (hierarchy_force <= 0) return;
+
+        int pole, hop_distance;
+        layout.getClosestPole(n, pole, hop_distance);
+
+        if (pole < 0) return;
+
+        nid_t pole_id = layout.graph.node_map[pole_list[pole]];
+        Real2DVector pole_pos = layout.getCoordinate(pole_id).toVector();
+        Real2DVector pos = layout.getCoordinate(n).toVector();
+        float dist = (pos - pole_pos).magnitude();
+
+        if (dist <= 0) return;
+
+        float desired_dist = hop_distance * hierarchy_radius;
+
+        forces[n] += (pos - pole_pos).getNormalizedFinite() * (desired_dist - dist) * hierarchy_force;
+    }
+
     //====================================
 
     void CPUForceAtlas2::apply_repulsion(nid_t n)
@@ -577,6 +598,8 @@ namespace RPGraph
             apply_repulsion(n);
             if (use_magnetic_field)
                 apply_magnetic(n);
+            if (hierarchy_force > 0)
+                apply_circular_hierarchy(n);
             max_force = std::max(max_force, forces[n].magnitude());
         }
 

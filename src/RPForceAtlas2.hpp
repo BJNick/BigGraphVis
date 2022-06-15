@@ -66,6 +66,7 @@ namespace RPGraph
             bool simple_center_of_mass;
             bool repel_poles;
             float soft_pin_factor, circle_pull_factor;
+            float hierarchy_radius, hierarchy_force;
 
         protected:
             int iteration;
