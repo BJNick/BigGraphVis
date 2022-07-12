@@ -191,9 +191,8 @@ namespace RPGraph
 
     Real2DVector CPUForceAtlas2::center_of_mass(nid_t n, nid_t t)
     {
-        return layout.getCoordinate(layout.secondary(n, t)).toVector() * 0.99 + layout.getCoordinate(layout.primary(n, t)).toVector() * 0.01;
-
-        /*Real2DVector pos_n = layout.getCoordinate(n).toVector();
+        //return layout.getCoordinate(layout.secondary(n, t)).toVector() * 0.99 + layout.getCoordinate(layout.primary(n, t)).toVector() * 0.01;
+        Real2DVector pos_n = layout.getCoordinate(n).toVector();
         Real2DVector pos_t = layout.getCoordinate(t).toVector();
         if (simple_center_of_mass)
             return (pos_n + pos_t) * 0.5;
@@ -201,7 +200,7 @@ namespace RPGraph
         float mass_t = mass(t) == 0 ? 1 : mass(t);
         float one_over_total_mass = 1 / (mass_n + mass_t);
         Real2DVector center_of_mass = (pos_n*mass_n + pos_t*mass_t) * one_over_total_mass;
-        return center_of_mass;*/
+        return center_of_mass;
     }
 
     Real2DVector CPUForceAtlas2::magnetic_equation(Real2DVector m, Real2DVector d, float b, float c, float alpha, float beta) 
@@ -396,7 +395,7 @@ namespace RPGraph
             if (dist < hierarchy_radius * 0.75) {
                 // Do not attract to the pole
                 forces[n] += (pos - pole_pos).getNormalizedFinite() * hierarchy_force / (0.75);
-            }
+            } // TODO: Make second expression in an ELSE?
             forces[n] += (pole_pos - pos).getNormalizedFinite() * sin(2* M_PI * dist / hierarchy_radius) * hierarchy_force * (hierarchy_radius / dist);
         }
     }
