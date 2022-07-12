@@ -543,7 +543,7 @@ int main(int argc, const char** argv)
 	// --- Parse all the arguments ---
 
 	// Check command-line usage
-	if (argc < 2 || (argc > 8 && argc < 16))
+	if (argc < 2)
 	{
 		fprintf(stderr, "Usage: graph_viewer gpu|cpu max_iterations num_snaps sg|wg scale gravity exact|approximate edgelist_path out_path png|csv|bin image_w image_h degree_threshold rounds heuristic\n");
 		fprintf(stderr, "Or:    graph_viewer -c config_file ...\n");
